@@ -1,0 +1,21 @@
+# Dependencies and build output are produced inside the image.
+node_modules
+.next
+out
+
+# Local state and secrets: never bake these into an image.
+data
+.env
+.env.*
+!.env.example
+
+# Tooling and VCS noise.
+.git
+.gitignore
+.dockerignore
+Dockerfile
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+.DS_Store
+coverage
