@@ -69,7 +69,7 @@ export default async function HomePage() {
 
           <section aria-label="All apps">
             <h2 className="text-title-2 text-label">All Apps</h2>
-            <ul className="mt-1 grid gap-x-12 md:grid-cols-2">
+            <ul className="mt-1 grid grid-cols-[minmax(0,1fr)] gap-x-12 md:grid-cols-[repeat(2,minmax(0,1fr))]">
               {apps.map((a, i) => <AppRow key={a.id} app={a} index={i} />)}
             </ul>
           </section>

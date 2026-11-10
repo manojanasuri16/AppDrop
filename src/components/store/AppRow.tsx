@@ -6,7 +6,7 @@ import { GetButton } from "./GetButton";
 export function AppRow({ app, index = 0 }: { app: AppCard; index?: number }) {
   return (
     <li
-      className="animate-rise group/row flex items-center gap-3.5 pl-0 [&:last-child_.row-body]:border-b-0"
+      className="animate-rise group/row flex min-w-0 items-center gap-3.5 pl-0 [&:last-child_.row-body]:border-b-0"
       style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
     >
       <Link href={links.app(app.slug)} className="pressable shrink-0 py-2.5" aria-label={app.name} tabIndex={-1}>
