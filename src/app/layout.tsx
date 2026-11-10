@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ServiceWorker } from "@/components/pwa/ServiceWorker";
+import { THEME_SCRIPT } from "@/components/theme/theme-script";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "AppDrop";
@@ -23,15 +24,16 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    // data-theme is set by THEME_SCRIPT before hydration, hence suppressHydrationWarning.
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#ffffff" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-dvh">
         {children}
         <ServiceWorker />

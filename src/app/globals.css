@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* `dark:` follows the resolved theme (Auto / Light / Dark), not just the OS setting. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) { @slot; }
+  }
+}
+
 /* ─── AppDrop design tokens (Apple HIG–inspired) ─────────────────────────── */
 :root {
   --bg: #ffffff;
@@ -23,8 +31,9 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+/* Dark tokens: explicit choice via [data-theme="dark"] (set by the theme script),
+   or the system preference when no choice has been applied yet (no-JS fallback). */
+:root[data-theme="dark"] {
     --bg: #000000;
     --bg-elevated: #1c1c1e;
     --bg-grouped: #000000;
@@ -41,6 +50,27 @@
     --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
     --shadow-float: 0 12px 40px rgba(0, 0, 0, 0.6);
     color-scheme: dark;
+  
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #000000;
+    --bg-elevated: #1c1c1e;
+    --bg-grouped: #000000;
+    --bg-secondary: #1c1c1e;
+    --fill: rgba(120, 120, 128, 0.24);
+    --fill-strong: rgba(120, 120, 128, 0.36);
+    --label: #f5f5f7;
+    --label-secondary: rgba(235, 235, 245, 0.62);
+    --label-tertiary: rgba(235, 235, 245, 0.3);
+    --separator: rgba(84, 84, 88, 0.55);
+    --tint: #0a84ff;
+    --tint-pressed: #409cff;
+    --material: rgba(22, 22, 24, 0.72);
+    --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-float: 0 12px 40px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  
   }
 }
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { InstallButton } from "@/components/pwa/InstallButton";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { TabBar, TopLinks } from "@/components/store/StoreNav";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +19,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </Link>
             <TopLinks />
           </div>
-          <InstallButton />
+          <div className="-mr-2 flex items-center gap-1">
+            <InstallButton />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
