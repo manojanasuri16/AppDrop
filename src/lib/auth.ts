@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import { and, eq, gt, lt } from "drizzle-orm";
 import { db, dbReady } from "@/db";
-import { loginAttempts } from "@/db/schema";
+import { authState, loginAttempts } from "@/db/schema";
+import { sql } from "drizzle-orm";
+import { base32Decode, verifyTotp } from "./totp";
 import { env } from "./env";
 
 export const SESSION_COOKIE = "appdrop_session";
@@ -19,6 +21,37 @@ const sha = (s: string) => createHash("sha256").update(s).digest();
 export function passwordMatches(input: string): boolean {
   // Hash both sides so lengths match and comparison is constant-time.
   return timingSafeEqual(sha(input), sha(env.adminPassword));
+}
+
+/** Is a usable authenticator secret configured? (≥ 80 bits of valid base32) */
+export function totpConfigured(): boolean {
+  const s = env.adminTotpSecret;
+  if (!s) return false;
+  try {
+    return base32Decode(s).length >= 10;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Verify a 6-digit authenticator code and atomically mark its time step as used,
+ * so a code can never be replayed (not even within its 30 s window).
+ */
+export async function consumeTotp(code: string): Promise<boolean> {
+  if (!totpConfigured()) return false;
+  const step = verifyTotp(env.adminTotpSecret!, code.replace(/\s/g, ""));
+  if (step === null) return false;
+  await dbReady();
+  const res = await db
+    .insert(authState)
+    .values({ key: "totp_last_step", value: String(step) })
+    .onConflictDoUpdate({
+      target: authState.key,
+      set: { value: String(step) },
+      setWhere: sql`CAST(${authState.value} AS INTEGER) < ${step}`,
+    });
+  return res.rowsAffected > 0;
 }
 
 export async function clientKey(): Promise<string> {

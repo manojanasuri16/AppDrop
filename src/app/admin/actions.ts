@@ -6,8 +6,8 @@ import { redirect } from "next/navigation";
 import { db, dbReady } from "@/db";
 import { apps, media, screenshots, releases, assets, downloads } from "@/db/schema";
 import {
-  clearFailedLogins, clientKey, createSession, destroySession, loginThrottle,
-  passwordMatches, recordFailedLogin, requireAdmin,
+  clearFailedLogins, clientKey, consumeTotp, createSession, destroySession, loginThrottle,
+  passwordMatches, recordFailedLogin, requireAdmin, totpConfigured,
 } from "@/lib/auth";
 import { getRepo, getRepoFile, listAccessibleRepos, listRepoDir, GitHubError } from "@/lib/github";
 import { storeImage, storeImageFile, MAX_IMAGE_BYTES } from "@/lib/media";
@@ -19,14 +19,22 @@ export type ActionState = { ok?: boolean; error?: string; message?: string; fiel
 /* ─── Session ───────────────────────────────────────────────────────────── */
 
 export async function login(_: ActionState, form: FormData): Promise<ActionState> {
+  if (!totpConfigured()) {
+    return { error: "Two-factor login isn't set up. Run `npm run totp:setup` and set ADMIN_TOTP_SECRET." };
+  }
   const k = await clientKey();
   const wait = await loginThrottle(k);
   if (wait) return { error: `Too many attempts. Try again in ${Math.ceil(wait / 60)} min.` };
   const password = String(form.get("password") ?? "");
-  if (!password || password.length > 512 || !passwordMatches(password)) {
+  const code = String(form.get("code") ?? "").replace(/\s/g, "");
+  // Check the password first, but only consume the code if the password is right, so a wrong guess can't burn a valid code.
+  // Always reply with the same message so nobody can tell which factor failed.
+  const pwOk = !!password && password.length <= 512 && passwordMatches(password);
+  const codeOk = pwOk && /^\d{6}$/.test(code) && (await consumeTotp(code));
+  if (!pwOk || !codeOk) {
     await recordFailedLogin(k);
-    await new Promise((r) => setTimeout(r, 400)); // slow brute force a little more
-    return { error: "Incorrect password." };
+    await new Promise((r) => setTimeout(r, 400));
+    return { error: "Incorrect password or code." };
   }
   await clearFailedLogins(k);
   await createSession();

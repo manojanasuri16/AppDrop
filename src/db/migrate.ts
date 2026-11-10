@@ -3,6 +3,8 @@ import type { Client } from "@libsql/client";
 /**
  * Tiny forward-only migrator. Each entry runs once, tracked in _migrations.
  * Keep in sync with schema.ts. Never edit an applied migration — append a new one.
+ * Every statement MUST be idempotent (IF NOT EXISTS etc.): concurrent cold starts
+ * (build workers, serverless instances) may run the same migration at the same time.
  */
 const MIGRATIONS: { id: number; sql: string[] }[] = [
   {
@@ -91,6 +93,10 @@ const MIGRATIONS: { id: number; sql: string[] }[] = [
       `CREATE INDEX IF NOT EXISTS login_attempts_key_idx ON login_attempts(key, created_at)`,
     ],
   },
+  {
+    id: 2,
+    sql: [`CREATE TABLE IF NOT EXISTS auth_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)`],
+  },
 ];
 
 export async function migrate(client: Client): Promise<void> {
@@ -101,6 +107,6 @@ export async function migrate(client: Client): Promise<void> {
   const done = new Set((await client.execute("SELECT id FROM _migrations")).rows.map((r) => Number(r.id)));
   for (const m of MIGRATIONS) {
     if (done.has(m.id)) continue;
-    await client.batch([...m.sql, { sql: "INSERT INTO _migrations (id) VALUES (?)", args: [m.id] }], "write");
+    await client.batch([...m.sql, { sql: "INSERT OR IGNORE INTO _migrations (id) VALUES (?)", args: [m.id] }], "write");
   }
 }

@@ -23,6 +23,10 @@ export const env = {
   get adminPassword() {
     return required("ADMIN_PASSWORD");
   },
+  /** Base32 authenticator secret (npm run totp:setup). Required: admin login always needs a code. */
+  get adminTotpSecret() {
+    return process.env.ADMIN_TOTP_SECRET?.replace(/\s/g, "") || undefined;
+  },
   get sessionSecret() {
     const s = required("SESSION_SECRET");
     if (s.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters");

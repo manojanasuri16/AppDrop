@@ -12,7 +12,7 @@ export default async function LoginPage() {
       <LogoGlyph size={72} />
       <div>
         <h1 className="text-title-1">AppDrop Admin</h1>
-        <p className="text-subhead mt-1 text-label-2">Enter your password to continue.</p>
+        <p className="text-subhead mt-1 text-label-2">Sign in with your password and authenticator code.</p>
       </div>
       <LoginForm />
     </div>

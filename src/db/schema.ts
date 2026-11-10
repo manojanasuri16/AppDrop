@@ -114,6 +114,12 @@ export const loginAttempts = sqliteTable(
   (t) => [index("login_attempts_key_idx").on(t.key, t.createdAt)],
 );
 
+/** Small key/value store for auth bookkeeping (e.g. last accepted TOTP step for replay protection). */
+export const authState = sqliteTable("auth_state", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
 export type App = typeof apps.$inferSelect;
 export type Release = typeof releases.$inferSelect;
 export type Asset = typeof assets.$inferSelect;

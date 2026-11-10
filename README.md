@@ -27,6 +27,7 @@ Requirements: Node.js 22+.
 ```bash
 npm i
 cp .env.example .env.local     # then fill in ADMIN_PASSWORD and SESSION_SECRET
+npm run totp:setup             # scan the QR in your authenticator app, add ADMIN_TOTP_SECRET to .env.local
 npm run dev
 ```
 
@@ -80,6 +81,7 @@ docker build -t appdrop .
 docker run -d --name appdrop -p 3000:3000 \
   -v appdrop-data:/app/data \
   -e ADMIN_PASSWORD='...' \
+  -e ADMIN_TOTP_SECRET='...' \
   -e SESSION_SECRET="$(openssl rand -hex 32)" \
   -e GITHUB_TOKEN='...' \
   appdrop
@@ -98,9 +100,12 @@ DATABASE_URL=libsql://your-db-your-org.turso.io
 DATABASE_AUTH_TOKEN=...
 ```
 
-Set the same `ADMIN_PASSWORD`, `SESSION_SECRET` and `GITHUB_TOKEN` in the Vercel project settings.
+Set the same `ADMIN_PASSWORD`, `ADMIN_TOTP_SECRET`, `SESSION_SECRET` and `GITHUB_TOKEN` in the Vercel project settings.
 
 ## Security model
+
+- **Two-factor admin login**: every sign-in needs the password **and** a 6-digit TOTP code (RFC 6238). Each code works only once (replay-protected), failures share one generic error, and attempts are rate-limited.
+
 
 - **Token isolation**: the GitHub token is read on the server only and is never sent to the browser.
 - **No IDOR on downloads**: asset IDs are resolved only through the app's own database rows. A client cannot ask for an arbitrary GitHub asset.
@@ -119,3 +124,13 @@ Set the same `ADMIN_PASSWORD`, `SESSION_SECRET` and `GITHUB_TOKEN` in the Vercel
 | `npm run build` / `npm start` | Production build and server |
 | `npm run lint` | Type check (`tsc --noEmit`) |
 | `npm run db:generate` | Generate a Drizzle migration after editing `src/db/schema.ts` |
+
+## Deploying to Netlify
+
+Netlify builds Next.js 16 automatically, with no config file needed. Serverless functions have no persistent disk, so use a hosted database:
+
+1. Create a free [Turso](https://turso.tech) database, then set `DATABASE_URL=libsql://…` and `DATABASE_AUTH_TOKEN`. Tables are created automatically on first request.
+2. In Site settings → Environment variables, set `ADMIN_PASSWORD`, `ADMIN_TOTP_SECRET`, `SESSION_SECRET`, `GITHUB_TOKEN` (and optionally `GITHUB_WEBHOOK_SECRET`).
+3. Connect the GitHub repo. Build command `npm run build`, no publish directory override.
+
+Notes: Netlify functions accept request bodies up to ~6 MB, so upload screenshots a few at a time. APK downloads are redirects to GitHub, so file size doesn't matter.
