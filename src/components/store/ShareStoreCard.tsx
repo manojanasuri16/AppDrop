@@ -1,6 +1,7 @@
 import { ShareButton } from "./ShareButton";
 
-export const STORE_SHARE_TEXT = "AppDrop — apps I've built. Install them straight to your phone.";
+import { STORE_SHARE_TEXT } from "@/lib/brand";
+export { STORE_SHARE_TEXT };
 
 export function ShareStoreCard({ url, qr }: { url: string; qr: string }) {
   return (

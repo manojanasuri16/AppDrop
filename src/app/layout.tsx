@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { STORE_DESCRIPTION } from "@/lib/brand";
 import { ServiceWorker } from "@/components/pwa/ServiceWorker";
 import { THEME_SCRIPT } from "@/components/theme/theme-script";
 
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: { siteName, type: "website" },
   twitter: { card: "summary_large_image" },
   title: { default: siteName, template: `%s · ${siteName}` },
-  description: "Apps made by a friend — download Android apps and open web apps, straight from the source.",
+  description: STORE_DESCRIPTION,
   applicationName: siteName,
   appleWebApp: { capable: true, title: siteName, statusBarStyle: "default" },
   formatDetection: { telephone: false },

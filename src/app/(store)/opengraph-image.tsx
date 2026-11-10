@@ -1,6 +1,7 @@
+import { STORE_DESCRIPTION, STORE_TAGLINE } from "@/lib/brand";
 import { ImageResponse } from "next/og";
 
-export const alt = "AppDrop — apps I've built";
+export const alt = `AppDrop: ${STORE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -17,7 +18,7 @@ export default function Image() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginLeft: 72, flex: 1 }}>
           <div style={{ fontSize: 112, fontWeight: 700, letterSpacing: -4, color: "#1d1d1f", lineHeight: 1 }}>AppDrop</div>
-          <div style={{ marginTop: 24, fontSize: 40, color: "#6e6e73", lineHeight: 1.3 }}>Apps I&apos;ve built — install them straight to your phone.</div>
+          <div style={{ marginTop: 24, fontSize: 40, color: "#6e6e73", lineHeight: 1.3 }}>{STORE_DESCRIPTION}</div>
         </div>
       </div>
     ),

@@ -1,3 +1,4 @@
+import { STORE_DESCRIPTION } from "@/lib/brand";
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
@@ -5,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name,
     short_name: name,
-    description: "Apps made by a friend — download and install.",
+    description: STORE_DESCRIPTION,
     id: "/",
     start_url: "/?source=pwa",
     scope: "/",

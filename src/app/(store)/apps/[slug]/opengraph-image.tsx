@@ -1,3 +1,4 @@
+import { STORE_TAGLINE } from "@/lib/brand";
 import { ImageResponse } from "next/og";
 import { eq } from "drizzle-orm";
 import { getAppBySlug } from "@/lib/queries";
@@ -35,7 +36,7 @@ function StoreCard() {
       </div>
       <div style={{ display: "flex", flexDirection: "column", marginLeft: 72 }}>
         <div style={{ fontSize: 112, fontWeight: 700, letterSpacing: -4, color: "#1d1d1f", lineHeight: 1 }}>AppDrop</div>
-        <div style={{ marginTop: 24, fontSize: 40, color: "#6e6e73" }}>Apps I&apos;ve built.</div>
+        <div style={{ marginTop: 24, fontSize: 40, color: "#6e6e73" }}>{STORE_TAGLINE}.</div>
       </div>
     </div>
   );
