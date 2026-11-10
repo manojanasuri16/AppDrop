@@ -1,0 +1,27 @@
+<!--
+  AppDrop updater: add these to app/src/main/AndroidManifest.xml.
+  Needs androidx.core (FileProvider). If your app lacks it: implementation("androidx.core:core-ktx:1.13.1")
+-->
+
+<!-- 1) Inside <manifest>, before <application> -->
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+<!-- 2) Inside <application> -->
+<provider
+    android:name="androidx.core.content.FileProvider"
+    android:authorities="${applicationId}.appdrop.fileprovider"
+    android:exported="false"
+    android:grantUriPermissions="true">
+    <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/appdrop_file_paths" />
+</provider>
+
+<!-- 3) Only if your app already declares its own FileProvider with the default authority:
+        that is fine, the authority above is different, so both coexist.
+        No <queries> entry is needed: the updater only starts the system installer and browser via
+        explicit startActivity calls, never resolves/queries other packages. -->
+
+<!-- 4) If the app has no custom Application class, create one and register it:
+        <application android:name=".MyApp" ...>   (calls AppDropUpdater.init in onCreate) -->

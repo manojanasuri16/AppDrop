@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db, dbReady } from "@/db";
 import { apps, assets, releases } from "@/db/schema";
 import { isAdmin } from "./auth";
+import { isBetaViewer } from "./beta";
 import { env } from "./env";
 import { resolveAssetDownload, GitHubError } from "./github";
 import { recordDownload } from "./queries";
@@ -48,17 +49,25 @@ export async function handleDownload(req: NextRequest, slug: string, assetIdPara
     return NextResponse.redirect(url, { status: 302, headers: noStore });
   }
 
+  // Prerelease builds are only served to beta testers/admins, unless the app opts in for everyone.
+  const allowPre = app.includePrereleases || (await isBetaViewer());
   let asset;
   if (assetIdParam !== undefined) {
     const id = Number(assetIdParam);
     if (!Number.isSafeInteger(id) || id <= 0) return fail(400, "Bad request");
-    asset = await db.query.assets.findFirst({ where: and(eq(assets.id, id), eq(assets.appId, app.id)) });
+    const [row] = await db
+      .select({ a: assets, pre: releases.prerelease })
+      .from(assets)
+      .innerJoin(releases, eq(releases.id, assets.releaseId))
+      .where(and(eq(assets.id, id), eq(assets.appId, app.id)))
+      .limit(1);
+    asset = row && (!row.pre || allowPre) ? row.a : undefined;
   } else {
     const [row] = await db
       .select({ a: assets })
       .from(assets)
       .innerJoin(releases, eq(releases.id, assets.releaseId))
-      .where(and(eq(assets.appId, app.id), eq(assets.isPrimary, true)))
+      .where(and(eq(assets.appId, app.id), eq(assets.isPrimary, true), allowPre ? undefined : eq(releases.prerelease, false)))
       .orderBy(desc(releases.publishedAt))
       .limit(1);
     asset = row?.a;

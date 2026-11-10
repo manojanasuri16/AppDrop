@@ -1,6 +1,6 @@
 /* AppDrop service worker. Hand-written, plain JS (no bundler).
  * Bump VERSION to invalidate every cache on the next deploy. */
-const VERSION = "v1";
+const VERSION = "v2";
 const PREFIX = "appdrop-";
 const STATIC_CACHE = `${PREFIX}static-${VERSION}`;
 const MEDIA_CACHE = `${PREFIX}media-${VERSION}`;
@@ -39,7 +39,7 @@ self.addEventListener("message", (event) => {
 
 /** Requests that must always reach the network, never the cache. */
 function isBypassed(url) {
-  return /^\/admin(\/|$)/.test(url.pathname) || /^\/api(\/|$)/.test(url.pathname) || /^\/d(\/|$)/.test(url.pathname);
+  return /^\/admin(\/|$)/.test(url.pathname) || /^\/api(\/|$)/.test(url.pathname) || /^\/d(\/|$)/.test(url.pathname) || /^\/beta(\/|$)/.test(url.pathname);
 }
 
 self.addEventListener("fetch", (event) => {
@@ -125,3 +125,57 @@ async function trim(cacheName, maxEntries) {
     await cache.delete(keys[i]);
   }
 }
+
+/* ---- Web Push ---- */
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    try { data = { body: event.data.text() }; } catch { data = {}; }
+  }
+  if (!data || typeof data !== "object") data = {};
+  const title = typeof data.title === "string" && data.title ? data.title : "AppDrop";
+  const tag = typeof data.tag === "string" && data.tag ? data.tag : undefined;
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: typeof data.body === "string" ? data.body : "",
+      icon: typeof data.icon === "string" && data.icon ? data.icon : "/icons/192",
+      badge: "/icons/192",
+      tag,
+      data: { url: typeof data.url === "string" ? data.url : "/" },
+      renotify: !!tag,
+    }),
+  );
+});
+
+/** Only same-origin URLs are allowed; anything else falls back to the store home. */
+function safeTarget(raw) {
+  try {
+    const u = new URL(typeof raw === "string" ? raw : "/", self.location.origin);
+    if (u.origin !== self.location.origin) return "/";
+    return u.pathname + u.search + u.hash;
+  } catch {
+    return "/";
+  }
+}
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = safeTarget(event.notification.data && event.notification.data.url);
+  event.waitUntil(
+    (async () => {
+      const list = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of list) {
+        if (new URL(client.url).origin === self.location.origin && "focus" in client) {
+          await client.focus();
+          if ("navigate" in client) {
+            try { await client.navigate(target); } catch { /* ignore */ }
+          }
+          return;
+        }
+      }
+      await self.clients.openWindow(target);
+    })(),
+  );
+});

@@ -104,7 +104,7 @@ export function AppForm({
               <div className="p-4"><Field id="assetPattern" label="APK asset pattern" optional error={fe.assetPattern} hint="e.g. universal or *-release.apk; leave empty to auto-pick">
                 <input {...input("assetPattern", { placeholder: "universal", autoCapitalize: "off", spellCheck: false })} />
               </Field></div>
-              <ToggleRow name="includePrereleases" title="Include pre-releases" hint="Betas and release candidates count as the latest version."
+              <ToggleRow name="includePrereleases" title="Show pre-releases to everyone" hint="Off: only beta testers see pre-release versions."
                 checked={v.includePrereleases} onChange={(b) => set("includePrereleases", b)} />
               <div className="p-4"><Field id="packageName" label="Package name" optional error={fe.packageName}>
                 <input {...input("packageName", { placeholder: "com.example.app", autoCapitalize: "off", spellCheck: false })} />

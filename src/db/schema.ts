@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text, blob, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, blob, uniqueIndex, primaryKey } from "drizzle-orm/sqlite-core";
 
 const now = sql`(unixepoch())`;
 
@@ -119,6 +119,73 @@ export const authState = sqliteTable("auth_state", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
 });
+
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    /** "all" | "app:<id>" | "admin" */
+    topic: text("topic").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(now),
+  },
+  (t) => [uniqueIndex("push_sub_uq").on(t.endpoint, t.topic), index("push_sub_topic_idx").on(t.topic)],
+);
+
+export const feedback = sqliteTable(
+  "feedback",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    appId: integer("app_id").notNull().references(() => apps.id, { onDelete: "cascade" }),
+    message: text("message").notNull(),
+    name: text("name").notNull().default(""),
+    contact: text("contact").notNull().default(""),
+    appVersion: text("app_version").notNull().default(""),
+    /** "web" (store form) | "app" (in-app via API) */
+    source: text("source").notNull().default("web"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(now),
+    readAt: integer("read_at", { mode: "timestamp" }),
+  },
+  (t) => [index("feedback_app_idx").on(t.appId, t.createdAt), index("feedback_unread_idx").on(t.readAt)],
+);
+
+export const betaInvites = sqliteTable(
+  "beta_invites",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    tokenHash: text("token_hash").notNull(),
+    label: text("label").notNull().default(""),
+    uses: integer("uses").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(now),
+    lastUsedAt: integer("last_used_at", { mode: "timestamp" }),
+    revokedAt: integer("revoked_at", { mode: "timestamp" }),
+  },
+  (t) => [uniqueIndex("beta_invites_hash_uq").on(t.tokenHash)],
+);
+
+export const versionPings = sqliteTable(
+  "version_pings",
+  {
+    appId: integer("app_id").notNull().references(() => apps.id, { onDelete: "cascade" }),
+    day: text("day").notNull(),
+    device: text("device").notNull(),
+    version: text("version").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.appId, t.day, t.device] })],
+);
+
+export const pageViews = sqliteTable(
+  "page_views",
+  {
+    appId: integer("app_id").notNull(),
+    day: text("day").notNull(),
+    source: text("source").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.appId, t.day, t.source] })],
+);
 
 export type App = typeof apps.$inferSelect;
 export type Release = typeof releases.$inferSelect;

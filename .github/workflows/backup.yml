@@ -1,0 +1,52 @@
+# Daily database backup of the AppDrop (Turso) database through /api/backup.
+#
+# The repository is PRIVATE, so the uploaded artifact is only visible to people with
+# access to this repo. Download it from the run's "Artifacts" section (kept 30 days).
+#
+# Repo secrets required:
+#   APPDROP_URL          https://your-appdrop.example (no trailing path)
+#   APPDROP_BACKUP_TOKEN same value as BACKUP_TOKEN set on the server (Vercel)
+
+name: Database backup
+
+on:
+  schedule:
+    - cron: "30 3 * * *" # 03:30 UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Export database
+        env:
+          APPDROP_URL: ${{ secrets.APPDROP_URL }}
+          BACKUP_TOKEN: ${{ secrets.APPDROP_BACKUP_TOKEN }}
+        run: node scripts/backup.mjs --out backups
+
+      - name: Upload backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: appdrop-backup-${{ github.run_id }}
+          path: backups/*.ndjson.gz
+          retention-days: 30
+          if-no-files-found: error
+          compression-level: 0 # the file is already gzipped

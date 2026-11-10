@@ -5,6 +5,10 @@ import { AppRow } from "@/components/store/AppRow";
 import { AppTile } from "@/components/store/AppTile";
 import { ShareStoreCard } from "@/components/store/ShareStoreCard";
 import { getSiteOrigin, qrSvg } from "@/components/store/share-server";
+import { NotifyButton } from "@/components/store/NotifyButton";
+import { BetaToast } from "@/components/store/BetaToast";
+import { withVia } from "@/components/store/share-url";
+import { trackView } from "@/lib/track";
 import { Shelf } from "@/components/store/Shelf";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +17,12 @@ function Tiles({ apps }: { apps: AppCard[] }) {
   return <>{apps.map((a) => <AppTile key={a.id} app={a} />)}</>;
 }
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ beta?: string; via?: string }> }) {
+  const sp = await searchParams;
+  await trackView(0, sp.via);
   const apps = await listPublicApps();
   const origin = await getSiteOrigin();
-  const qr = await qrSvg(origin);
+  const qr = await qrSvg(withVia(origin, "qr"));
   const date = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
   const featured = apps.filter((a) => a.featured);
@@ -31,6 +37,7 @@ export default async function HomePage() {
 
   return (
     <div className="pb-4">
+      <BetaToast status={typeof sp.beta === "string" ? sp.beta : undefined} />
       <header className="animate-rise pb-5 pt-7 md:pt-12">
         <p className="text-eyebrow text-label-3">{date}</p>
         <h1 className="mt-1 text-large-title text-label md:text-[2.75rem]">Today</h1>
@@ -78,11 +85,12 @@ export default async function HomePage() {
             </ul>
           </section>
 
+          <NotifyButton topic="all" variant="store" className="mb-4 rounded-[22px] bg-bg-secondary p-5 shadow-card ring-1 ring-black/5 dark:ring-white/10" />
           <ShareStoreCard url={origin} qr={qr} />
         </div>
       )}
 
-      {apps.length === 0 && <div className="mt-2"><ShareStoreCard url={origin} qr={qr} /></div>}
+      {apps.length === 0 && <div className="mt-2"><NotifyButton topic="all" variant="store" className="mb-4 rounded-[22px] bg-bg-secondary p-5 shadow-card ring-1 ring-black/5 dark:ring-white/10" /><ShareStoreCard url={origin} qr={qr} /></div>}
     </div>
   );
 }

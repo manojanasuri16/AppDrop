@@ -4,11 +4,15 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { ShareButton } from "@/components/store/ShareButton";
 import { STORE_SHARE_TEXT } from "@/components/store/ShareStoreCard";
 import { getSiteOrigin, qrSvg } from "@/components/store/share-server";
+import { withVia } from "@/components/store/share-url";
+import { isBetaViewer } from "@/lib/beta";
+import { isAdmin } from "@/lib/auth";
 import { TabBar, TopLinks } from "@/components/store/StoreNav";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const origin = await getSiteOrigin();
-  const qr = await qrSvg(origin);
+  const qr = await qrSvg(withVia(origin, "qr"));
+  const beta = (await isBetaViewer()) && !(await isAdmin());
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
       <header className="material hairline-b safe-top sticky top-0 z-30">
@@ -31,6 +35,18 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           </div>
         </div>
       </header>
+
+      {beta && (
+        <div className="mx-auto flex w-full max-w-[1080px] justify-center px-5 pt-3">
+          <div role="status" className="animate-fade flex min-h-9 items-center gap-2 rounded-full bg-warning/15 py-1 pl-3.5 pr-1 text-footnote text-label">
+            <span className="rounded-full bg-warning px-1.5 py-px text-[0.6875rem] font-bold uppercase tracking-wide text-white" aria-hidden>Beta</span>
+            <span><span className="font-semibold">Beta tester</span> · you&apos;ll see pre-release versions</span>
+            <form method="post" action="/beta/leave">
+              <button type="submit" className="pressable min-h-8 rounded-full px-3 text-footnote font-semibold text-tint hover:bg-fill">Leave</button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <main className="mx-auto w-full max-w-[1080px] flex-1 overflow-x-clip px-5 pb-28 md:pb-16">{children}</main>
 

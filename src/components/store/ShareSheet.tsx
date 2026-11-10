@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { withVia } from "./share-url";
 
 type Props = { url: string; title: string; text?: string; qrSvg?: string; onClose: () => void };
 
@@ -53,15 +54,16 @@ export function ShareSheet({ url, title, text, qrSvg, onClose }: Props) {
     };
   }, [onClose]);
 
-  const msg = text ? `${text} ${url}` : `${title} ${url}`;
+  const shareUrl = withVia(url, "share");
+  const msg = text ? `${text} ${shareUrl}` : `${title} ${shareUrl}`;
   const targets = [
     { name: "WhatsApp", href: `https://wa.me/?text=${encodeURIComponent(msg)}`, bg: "#25d366", icon: <WhatsApp /> },
-    { name: "Telegram", href: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text ?? title)}`, bg: "#2aabee", icon: <Telegram /> },
+    { name: "Telegram", href: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text ?? title)}`, bg: "#2aabee", icon: <Telegram /> },
     { name: "Email", href: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(msg)}`, bg: "#0a84ff", icon: <Mail /> },
   ];
 
   const copy = async () => {
-    if (await copyText(url)) {
+    if (await copyText(shareUrl)) {
       setCopied(true);
       clearTimeout(timer.current);
       timer.current = setTimeout(() => setCopied(false), 1600);

@@ -6,6 +6,7 @@ import { apps, assets, releases, type App } from "@/db/schema";
 import { env } from "./env";
 import { getRepo, listReleases, GitHubError } from "./github";
 import { selectApks } from "./apk";
+import { notifyNewRelease } from "./push";
 
 const inflight = new Map<number, Promise<SyncResult>>();
 export type SyncResult = { ok: true; releases: number } | { ok: false; error: string };
@@ -31,8 +32,11 @@ async function doSync(appId: number): Promise<SyncResult> {
       listReleases(app.repoOwner, app.repoName),
     ]);
 
+    // Prereleases are always mirrored; who sees them is decided at read time (beta channel / includePrereleases).
+    const existingIds = new Set(
+      (await db.select({ id: releases.id }).from(releases).where(eq(releases.appId, app.id))).map((r) => r.id),
+    );
     const rows = ghReleases
-      .filter((r) => app.includePrereleases || !r.prerelease)
       .map((r) => ({ r, apks: selectApks(r.assets.filter((a) => a.state === "uploaded"), app.assetPattern) }))
       // Android apps only list releases that actually ship an APK; web apps keep all (changelog).
       .filter(({ apks }) => app.kind === "web" || apks.length > 0);
@@ -87,6 +91,18 @@ async function doSync(appId: number): Promise<SyncResult> {
         .set({ repoPrivate: repo.private, lastSyncedAt: new Date(), syncError: null })
         .where(eq(apps.id, app.id));
     });
+    // Announce a genuinely new stable release (not on an app's first sync, not for drafts,
+    // and only if it was published recently — avoids spamming when old releases appear).
+    if (app.lastSyncedAt && app.visibility !== "draft") {
+      const fresh = rows
+        .filter(({ r, apks }) => !existingIds.has(r.id) && !r.prerelease && (app.kind === "web" || apks.length > 0))
+        .map(({ r }) => r)
+        .filter((r) => Date.now() - new Date(r.published_at ?? r.created_at).getTime() < 7 * 86_400_000)
+        .sort((a, b) => +new Date(b.published_at ?? b.created_at) - +new Date(a.published_at ?? a.created_at))[0];
+      if (fresh) {
+        await notifyNewRelease(app, fresh.tag_name, fresh.body ?? "").catch((e) => console.error("[push] release notify", e));
+      }
+    }
     return { ok: true, releases: rows.length };
   } catch (e) {
     const error = e instanceof GitHubError ? e.message : "Sync failed";

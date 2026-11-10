@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 // ───────────────────────── output helpers ─────────────────────────
 const tty = process.stdout.isTTY && !process.env.NO_COLOR;
@@ -356,6 +357,7 @@ Commands:
   list               List all apps on the server
   screenshot-web     Capture screenshots of a web app with headless Chrome
   screenshot-android Capture a screenshot from a connected Android device/emulator
+  add-updater        Add the in-app update checker + feedback (AppDropUpdater.kt) to an Android project
 
 Run \`appdrop <command> --help\` for details.
 Config: APPDROP_URL / APPDROP_API_KEY env vars override ${CONFIG_FILE}`,
@@ -410,6 +412,15 @@ Files are named 01-home.png, 02-about.png, …; add them to "screenshots" in app
 
 Captures the screen of the connected device/emulator via \`adb exec-out screencap -p\`.
 Without --name, the next free NN-screen.png is used.`,
+  "add-updater": `Usage: appdrop add-updater [--slug <slug>] [--base <url>]
+
+Run inside an Android project. Copies the AppDrop in-app updater into the app:
+  <module>/src/main/java/<namespace>/appdrop/AppDropUpdater.kt   (package line rewritten)
+  <module>/src/main/res/xml/appdrop_file_paths.xml
+then PRINTS the manifest, init() and check() snippets with your values filled in
+(it never edits your manifest or code). Safe to re-run: it overwrites only its own files.
+  --slug <slug>   App slug (default: "slug" in appdrop.json)
+  --base <url>    AppDrop URL (default: the configured URL from \`appdrop login\`)`,
 };
 
 async function cmdLogin(argv) {
@@ -750,10 +761,56 @@ async function cmdScreenshotAndroid(argv) {
   info('Add it to "screenshots" in appdrop.json.');
 }
 
+async function cmdAddUpdater(argv) {
+  const { flags } = parseArgs(argv, { str: ["slug", "base"] });
+  if (flags.help) return console.log(HELP["add-updater"]);
+  const dir = process.cwd();
+  const mod = findAndroidModule(dir);
+  if (mod === null || !exists(dir, mod, "src/main")) fail("No Android app module found here. Run this in the project root (expects app/build.gradle[.kts]).");
+  const modDir = path.join(dir, mod);
+  const gradle = ["build.gradle.kts", "build.gradle"].map((f) => readText(path.join(modDir, f)) ?? "").join("\n");
+  const ns = gradle.match(/namespace\s*=?\s*["']([^"']+)["']/)?.[1] ?? gradle.match(/applicationId\s*=?\s*["']([^"']+)["']/)?.[1];
+  if (!ns) fail("Could not find `namespace` or `applicationId` in the module's build.gradle[.kts].");
+  const main = path.join(modDir, "src/main");
+  const srcRoot = ["java", "kotlin"].map((d) => path.join(main, d)).find((d) => fs.existsSync(path.join(d, ...ns.split(".")))) ??
+    ["java", "kotlin"].map((d) => path.join(main, d)).find((d) => fs.existsSync(d)) ?? path.join(main, "java");
+
+  const man = readJson(path.join(dir, "appdrop.json"));
+  const slug = flags.slug || man?.slug;
+  if (!slug) fail("Slug unknown: pass --slug <slug> or run `appdrop init` first.");
+  const base = (flags.base || loadConfig().url || "https://appdrop-store.vercel.app").replace(/\/+$/, "");
+
+  const srcDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "android");
+  const kt = readText(path.join(srcDir, "AppDropUpdater.kt"));
+  const xml = readText(path.join(srcDir, "res/xml/appdrop_file_paths.xml"));
+  if (!kt || !xml) fail(`AppDrop updater sources not found in ${srcDir}. Update your AppDrop checkout (git pull).`);
+
+  const pkg = `${ns}.appdrop`;
+  const ktOut = path.join(srcRoot, ...pkg.split("."), "AppDropUpdater.kt");
+  const xmlOut = path.join(main, "res/xml/appdrop_file_paths.xml");
+  for (const [f, content] of [[ktOut, kt.replace(/^package appdrop\s*$/m, `package ${pkg}`)], [xmlOut, xml]]) {
+    const existed = fs.existsSync(f);
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, content);
+    (existed ? warn : ok)(`${existed ? "Overwrote" : "Created"} ${path.relative(dir, f)}`);
+  }
+
+  const manifest = (readText(path.join(srcDir, "MANIFEST_SNIPPET.xml")) ?? "").replace(/<!--[\s\S]*?-->\s*/g, "").trim();
+  out(`\n${bold("1. AndroidManifest.xml")} (${path.relative(dir, path.join(main, "AndroidManifest.xml"))}): add permissions inside <manifest>, provider inside <application>\n`);
+  out(manifest.replace(/^/gm, "  "));
+  out(`\n${bold("2. Application.onCreate()")} (create an Application class and set android:name if there is none)\n
+  import ${pkg}.AppDropUpdater
+  AppDropUpdater.init(this, "${base}", "${slug}")`);
+  out(`\n${bold("3. Launcher activity")}\n
+  override fun onResume() { super.onResume(); AppDropUpdater.check(this) }
+  // menu items: AppDropUpdater.check(this, force = true)   AppDropUpdater.openFeedback(this)`);
+  out(`\n${bold("4.")} Ensure androidx.core is a dependency (implementation("androidx.core:core-ktx")), and that versionName matches your release tags (1.4.0 <-> v1.4.0).`);
+}
+
 // ───────────────────────── main ─────────────────────────
 const COMMANDS = {
   login: cmdLogin, init: cmdInit, publish: cmdPublish, release: cmdRelease, status: cmdStatus, list: cmdList,
-  "screenshot-web": cmdScreenshotWeb, "screenshot-android": cmdScreenshotAndroid,
+  "screenshot-web": cmdScreenshotWeb, "screenshot-android": cmdScreenshotAndroid, "add-updater": cmdAddUpdater,
 };
 
 async function main() {

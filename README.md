@@ -10,6 +10,12 @@ A personal app marketplace. Publish the Android apps and web apps you make for f
 - **Auto-sync from GitHub**: release lists refresh in the background (stale-while-revalidate), with an optional webhook for instant updates.
 - **Simple admin**: a password-protected panel to add apps, edit the listing and screenshots, and set visibility.
 - **Private by design**: drafts are hidden, nothing is indexed, and the GitHub token never leaves the server.
+- **In-app update checks (Android)**: installed apps can tell when a newer release is out (see [In-app updates](#in-app-updates)).
+- **Push notifications**: "Notify me" per app, plus store-wide alerts, when a new release is published.
+- **Feedback**: a store feedback form and an in-app feedback form, stored per app.
+- **Beta channel**: invite links for testers, who then get pre-release builds.
+- **Insights**: views by source, downloads by version, active devices and the share of devices on the latest version.
+- **Daily backups**: a scheduled export of the whole database, downloadable from GitHub Actions.
 
 ## Architecture
 
@@ -69,6 +75,80 @@ Visibility controls where an app shows: **public** lists it in the store, **unli
    - **Secret**: the same value as `GITHUB_WEBHOOK_SECRET`
    - **Which events**: select **Let me select individual events**, then tick **Releases**.
 3. Save. New releases now appear in the store right away instead of at the next TTL.
+
+## Push notifications
+
+Visitors can tap **Notify me** on an app to hear about its new releases, or subscribe to store-wide alerts.
+
+1. Generate a VAPID key pair: `npx web-push generate-vapid-keys`
+2. In Vercel (or your host), set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (for example `mailto:you@example.com`).
+3. Redeploy. Without both keys, push is disabled.
+
+Android Chrome works straight from the browser. On iOS, notifications only work after the store is installed to the Home Screen (iOS 16.4+).
+
+## Beta channel
+
+Testers get pre-release builds through a private invite link.
+
+1. In `/admin/beta`, create an invite link for each tester (the link is shown once, so copy it then).
+2. Publish beta builds as GitHub **pre-releases** (`node scripts/appdrop.mjs release --prerelease`, or tick "pre-release" on GitHub). Pre-releases are shown to browsers with an active invite, and to apps that have "include pre-releases" turned on.
+3. The tester opens the link once on their device. Revoke an invite at any time in `/admin/beta`, which stops that link from giving access.
+
+## In-app updates
+
+Android apps can check the store for a newer release and prompt the user to update. The client side is in [`docs/android-updates.md`](docs/android-updates.md). To add the check to an Android project, run `node scripts/appdrop.mjs add-updater` in that project's folder.
+
+## Backups
+
+A GitHub Actions workflow (`.github/workflows/backup.yml`) exports the database every day at 03:30 UTC through the protected `/api/backup` endpoint. Each run uploads one `backup-<timestamp>.ndjson.gz` file as an artifact, kept for 30 days.
+
+**Setup**
+
+1. Generate a token: `openssl rand -hex 32`.
+2. Add it to Vercel as `BACKUP_TOKEN`, and redeploy. Without it the endpoint returns 404.
+3. Add two repository secrets in GitHub (**Settings → Secrets and variables → Actions**): `APPDROP_URL` (your store URL, for example `https://apps.example.com`) and `APPDROP_BACKUP_TOKEN` (the same token).
+
+The repository is private, so the artifacts are visible only to people with access to it. Backups contain everything in the database, including push subscriptions and feedback, so don't commit them or share them. Keep them out of git (add `backups/` to `.gitignore`).
+
+**Download**: open the workflow run under **Actions → Database backup**, then download the `appdrop-backup-<run_id>` artifact. To back up on demand, use **Run workflow**.
+
+**Run locally**: `APPDROP_URL=https://apps.example.com BACKUP_TOKEN=... node scripts/backup.mjs --out backups`
+
+**Restore into a new database**
+
+1. Create the new database (for example a fresh Turso database) and start AppDrop once against it so it creates its tables: set `DATABASE_URL` and `DATABASE_AUTH_TOKEN` to the new database, run `npm run dev`, and open the site.
+2. From the repo root, restore the file:
+   ```bash
+   node scripts/restore-backup.mjs backups/backup-2026-11-10T03-30.ndjson.gz \
+     --db libsql://your-new-db.turso.io --auth-token <token>
+   ```
+   The script asks for confirmation (or pass `--yes`). It refuses to write into a database that already has apps unless you pass `--force`.
+3. Point `DATABASE_URL` at the restored database and redeploy.
+
+The restore script has no default database, so it can't touch your live database by accident.
+
+## Environment variables
+
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `ADMIN_PASSWORD` | Yes | Admin passphrase |
+| `ADMIN_TOTP_SECRET` | Yes | Authenticator secret, from `npm run totp:setup` |
+| `SESSION_SECRET` | Yes | At least 32 characters. `openssl rand -hex 32` |
+| `GITHUB_TOKEN` | Recommended | Fine-grained PAT, Contents and Metadata read-only |
+| `GITHUB_WEBHOOK_SECRET` | No | Enables `/api/webhooks/github` |
+| `DATABASE_URL` | No | Default `file:./data/appdrop.db`. Use `libsql://…` for Turso |
+| `DATABASE_AUTH_TOKEN` | With Turso | Token for the `libsql://` database |
+| `SYNC_TTL_MINUTES` | No | Minutes before a release list is refreshed. Default 15 |
+| `APPDROP_API_KEY` | No | Publishing API key (at least 32 characters). Empty disables the API |
+| `NEXT_PUBLIC_SITE_NAME` | No | Store name. Default `AppDrop` |
+| `NEXT_PUBLIC_SITE_URL` | Recommended | Public store URL, used for invite links and metadata. Default `http://localhost:3000` |
+| `NEXT_PUBLIC_OWNER_NAME` | No | Owner name on the store. Defaults to the value in `src/lib/brand.ts` |
+| `VAPID_PUBLIC_KEY` | For push | From `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | For push | Keep secret |
+| `VAPID_SUBJECT` | For push | `mailto:` or `https:` contact. Default `mailto:admin@example.com` |
+| `BACKUP_TOKEN` | For backups | `openssl rand -hex 32`. Also set as the `APPDROP_BACKUP_TOKEN` repo secret |
+
+Copy `.env.example` for a full list with comments.
 
 ## Deployment
 

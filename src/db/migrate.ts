@@ -97,6 +97,61 @@ const MIGRATIONS: { id: number; sql: string[] }[] = [
     id: 2,
     sql: [`CREATE TABLE IF NOT EXISTS auth_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)`],
   },
+  {
+    id: 3,
+    sql: [
+      // Web Push: one row per (device endpoint, topic). topic = "all" | "app:<id>" | "admin".
+      `CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        endpoint TEXT NOT NULL,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        topic TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch())
+      )`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS push_sub_uq ON push_subscriptions(endpoint, topic)`,
+      `CREATE INDEX IF NOT EXISTS push_sub_topic_idx ON push_subscriptions(topic)`,
+      `CREATE TABLE IF NOT EXISTS feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        app_id INTEGER NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+        message TEXT NOT NULL,
+        name TEXT NOT NULL DEFAULT '',
+        contact TEXT NOT NULL DEFAULT '',
+        app_version TEXT NOT NULL DEFAULT '',
+        source TEXT NOT NULL DEFAULT 'web',
+        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        read_at INTEGER
+      )`,
+      `CREATE INDEX IF NOT EXISTS feedback_app_idx ON feedback(app_id, created_at)`,
+      `CREATE INDEX IF NOT EXISTS feedback_unread_idx ON feedback(read_at)`,
+      `CREATE TABLE IF NOT EXISTS beta_invites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        token_hash TEXT NOT NULL,
+        label TEXT NOT NULL DEFAULT '',
+        uses INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        last_used_at INTEGER,
+        revoked_at INTEGER
+      )`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS beta_invites_hash_uq ON beta_invites(token_hash)`,
+      // Anonymous update-check pings: one row per app/day/device (device id is hashed).
+      `CREATE TABLE IF NOT EXISTS version_pings (
+        app_id INTEGER NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+        day TEXT NOT NULL,
+        device TEXT NOT NULL,
+        version TEXT NOT NULL,
+        PRIMARY KEY (app_id, day, device)
+      )`,
+      // Aggregated page views. app_id 0 = store home. source = direct | share | qr | app.
+      `CREATE TABLE IF NOT EXISTS page_views (
+        app_id INTEGER NOT NULL,
+        day TEXT NOT NULL,
+        source TEXT NOT NULL,
+        count INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (app_id, day, source)
+      )`,
+    ],
+  },
 ];
 
 export async function migrate(client: Client): Promise<void> {

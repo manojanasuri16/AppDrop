@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAppBySlug, links } from "@/lib/queries";
 import { isAdmin } from "@/lib/auth";
+import { isBetaViewer } from "@/lib/beta";
 import { refreshIfStale } from "@/lib/sync";
 import { AppIcon } from "@/components/store/AppIcon";
 import { Markdown } from "@/components/store/Markdown";
@@ -12,13 +13,13 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const app = await getAppBySlug(slug, { admin: await isAdmin() });
+  const app = await getAppBySlug(slug, { admin: await isAdmin(), beta: await isBetaViewer() });
   return { title: app ? `Version History · ${app.name}` : "Not found" };
 }
 
 export default async function VersionsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const app = await getAppBySlug(slug, { admin: await isAdmin() });
+  const app = await getAppBySlug(slug, { admin: await isAdmin(), beta: await isBetaViewer() });
   if (!app) notFound();
   refreshIfStale(app.raw);
   const rels = app.releases;
@@ -48,7 +49,7 @@ export default async function VersionsPage({ params }: { params: Promise<{ slug:
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                   <h2 className="text-title-3 text-label">{r.tag}</h2>
                   {isLatest && <span className="rounded-full bg-tint px-2 py-0.5 text-caption font-semibold text-white">Latest</span>}
-                  {r.prerelease && <span className="rounded-full bg-warning/20 px-2 py-0.5 text-caption font-semibold text-label">Pre-release</span>}
+                  {r.prerelease && <span className="rounded-full bg-warning px-2 py-0.5 text-caption font-semibold text-white">Beta</span>}
                 </div>
                 <p className="mt-0.5 text-footnote text-label-2">
                   {r.name && r.name !== r.tag ? `${r.name} · ` : ""}

@@ -11,6 +11,11 @@ import { RelativeTime } from "@/components/store/RelativeTime";
 import { ScreenshotGallery } from "@/components/store/ScreenshotGallery";
 import { StickyAppBar } from "@/components/store/StickyAppBar";
 import { ShareButton } from "@/components/store/ShareButton";
+import { NotifyButton } from "@/components/store/NotifyButton";
+import { FeedbackButton } from "@/components/store/FeedbackButton";
+import { withVia } from "@/components/store/share-url";
+import { isBetaViewer } from "@/lib/beta";
+import { trackView } from "@/lib/track";
 import { getSiteOrigin, qrSvg } from "@/components/store/share-server";
 import { InstallHelp } from "@/components/store/InstallHelp";
 import { CopyButton } from "@/components/store/CopyButton";
@@ -21,7 +26,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const app = await getAppBySlug(slug, { admin: await isAdmin() });
+  const app = await getAppBySlug(slug, { admin: await isAdmin(), beta: await isBetaViewer() });
   if (!app) return { title: "Not found" };
   return {
     title: app.name,
@@ -50,10 +55,11 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
   );
 }
 
-export default async function AppPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function AppPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ via?: string }> }) {
   const { slug } = await params;
-  const app = await getAppBySlug(slug, { admin: await isAdmin() });
+  const app = await getAppBySlug(slug, { admin: await isAdmin(), beta: await isBetaViewer() });
   if (!app) notFound();
+  await trackView(app.id, (await searchParams).via);
   refreshIfStale(app.raw);
 
   const web = app.kind === "web";
@@ -63,7 +69,7 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
   const href = links.get(app.slug);
   const digest = cleanDigest(primary?.digest);
   const appUrl = `${await getSiteOrigin()}${links.app(app.slug)}`;
-  const appQr = await qrSvg(appUrl);
+  const appQr = await qrSvg(withVia(appUrl, "qr"));
   const shareText = app.tagline ? `${app.name} — ${app.tagline}` : `Check out ${app.name} on AppDrop`;
   const updated = web ? app.raw.updatedAt : (app.latestDate ?? app.raw.updatedAt);
 
@@ -90,11 +96,13 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
             <GetButton app={app} href={href} size="lg" disabled={unavailable} />
             <ShareButton url={appUrl} title={app.name} text={shareText} variant="icon" label={`Share ${app.name}`} qrSvg={appQr} className="-mx-1" />
             <p className="min-w-0 text-caption text-label-3">
-              {unavailable ? "No release yet" : web ? hostname(app.webUrl) : <>Version {latest?.tag}<br />{formatBytes(primary?.size)}</>}
+              {unavailable ? "No release yet" : web ? hostname(app.webUrl) : <>{latest?.prerelease ? "Beta" : "Version"} {latest?.tag}<br />{formatBytes(primary?.size)}</>}
             </p>
           </div>
         </div>
       </header>
+
+      {!web && !unavailable && <NotifyButton topic={`app:${app.slug}`} className="animate-rise -mt-2 mb-5" />}
 
       <div className="animate-rise no-scrollbar -mx-5 flex overflow-x-auto border-y-[0.5px] border-separator px-5 py-3.5" style={{ animationDelay: "80ms" }} role="list" aria-label="App facts">
         <Stat label={web ? "Opens" : "Downloads"} value={formatCount(app.downloads)} />
@@ -127,7 +135,7 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
             <Link href={links.versions(app.slug)} className="min-h-11 py-2.5 text-subhead font-medium text-tint">Version History</Link>
           </div>
           <p className="mt-0.5 flex gap-2 text-footnote text-label-3">
-            <span>{latest.tag}</span>·<RelativeTime date={latest.publishedAt} />
+            <span>{latest.tag}</span>{latest.prerelease && <span className="rounded-full bg-warning px-2 py-px text-caption font-semibold text-white">Beta</span>}·<RelativeTime date={latest.publishedAt} />
           </p>
           <div className="mt-3">
             <Expandable long={latest.body.length > 360}>
@@ -173,6 +181,7 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
             </div>
           )}
           <ShareButton url={appUrl} title={app.name} text={shareText} variant="row" label="Share App" qrSvg={appQr} />
+          <FeedbackButton slug={app.slug} appName={app.name} versions={web ? [] : app.releases.map((r) => r.tag)} />
         </dl>
       </section>
     </article>

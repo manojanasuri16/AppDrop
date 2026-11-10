@@ -11,6 +11,7 @@ import { BarChart } from "@/components/admin/BarChart";
 import { SignOutButton } from "@/components/admin/SignOutButton";
 import { PlusIcon, RefreshIcon, GlobeIcon } from "@/components/admin/icons";
 import { fmtNum, timeAgo } from "@/components/admin/format";
+import { storeStats } from "@/lib/stats";
 import { syncAll } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -18,11 +19,12 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboard() {
   await requireAdmin();
   await dbReady();
-  const [list, series, syncRows, h] = await Promise.all([
+  const [list, series, syncRows, h, store] = await Promise.all([
     listAllApps(),
     downloadSeries(30),
     db.select({ id: apps.id, owner: apps.repoOwner, at: apps.lastSyncedAt, err: apps.syncError }).from(apps),
     headers(),
+    storeStats(30),
   ]);
   const sync = new Map(syncRows.map((r) => [r.id, r]));
   const now = Date.now();
@@ -52,6 +54,9 @@ export default async function AdminDashboard() {
     { label: "Last 30 days", value: fmtNum(last30) },
     { label: "Public apps", value: `${publicCount}`, sub: `of ${list.length}` },
     { label: "Sync errors", value: `${errors}`, danger: errors > 0 },
+    { label: "Views (30d)", value: fmtNum(store.views) },
+    { label: "Active devices", value: fmtNum(store.activeDevices) },
+    { label: "Unread feedback", value: `${store.unreadFeedback}`, href: "/admin/feedback?filter=unread", danger: false },
   ];
 
   return (
@@ -73,14 +78,22 @@ export default async function AdminDashboard() {
       )}
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {tiles.map((t) => (
-          <div key={t.label} className="rounded-2xl bg-elevated p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+        {tiles.map((t) => {
+          const body = (
+            <>
             <dt className="text-footnote text-label-2">{t.label}</dt>
             <dd className={`text-title-1 mt-1 tabular-nums ${t.danger ? "text-danger" : ""}`}>
               {t.value}{t.sub && <span className="text-subhead ml-1.5 font-normal text-label-2">{t.sub}</span>}
             </dd>
-          </div>
-        ))}
+            </>
+          );
+          const cls = "rounded-2xl bg-elevated p-4";
+          return "href" in t && t.href ? (
+            <Link key={t.label} href={t.href} className={`${cls} pressable block`} style={{ boxShadow: "var(--shadow-card)" }}>{body}</Link>
+          ) : (
+            <div key={t.label} className={cls} style={{ boxShadow: "var(--shadow-card)" }}>{body}</div>
+          );
+        })}
       </dl>
 
       <section className="rounded-2xl bg-elevated p-5" style={{ boxShadow: "var(--shadow-card)" }} aria-labelledby="dl-h">

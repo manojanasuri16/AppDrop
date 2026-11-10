@@ -50,7 +50,14 @@ Store them in `appdrop/screenshots/` and list them in order under `screenshots` 
   3. Ask the user to provide screenshots.
 
 ## 5. Android release (skip for web apps)
-1. Bump `versionCode` (must increase) and `versionName` in `app/build.gradle(.kts)`.
+0. **Add in-app updates & feedback** (once per app; skip if `AppDropUpdater.kt` already exists in the project):
+   - Run `node "$CLI" add-updater` in the project root (uses the slug from `appdrop.json`; run `init` first if missing). It copies `AppDropUpdater.kt` and `appdrop_file_paths.xml` and prints the snippets; it never edits your code.
+   - Apply the printed manifest snippet (permissions in `<manifest>`, `<provider>` in `<application>`). Add `androidx.core:core-ktx` if the app doesn't use androidx.
+   - Call `AppDropUpdater.init(this, "<base url>", "<slug>")` in `Application.onCreate()` (find the class named by `android:name` on `<application>`; if none, create a minimal `Application` subclass and register it in the manifest).
+   - Call `AppDropUpdater.check(this)` in the launcher Activity's `onResume` (find the activity with the `MAIN`/`LAUNCHER` intent filter; for Compose-only apps put it in `onResume` of the `ComponentActivity`).
+   - If there is an obvious settings/about screen or menu, add "Check for updates" (`check(this, force = true)`) and "Send feedback" (`openFeedback(this)`) entries. Don't restructure the app.
+   - Build (`./gradlew assembleDebug`) to confirm it compiles. Details: `docs/android-updates.md` in the AppDrop repo.
+1. Bump `versionCode` (must increase) and `versionName` in `app/build.gradle(.kts)`. `versionName` must equal the tag without the `v` (tag `v1.4.0` -> `1.4.0`) or the updater misreports.
 2. Build a **signed** release APK: `./gradlew assembleRelease` (output usually `app/build/outputs/apk/release/*.apk`). An unsigned APK cannot be installed.
    - Signing: keep a persistent keystore **outside the repo**, e.g. `~/.android-keystores/<app>.jks`, with credentials in `~/.gradle/gradle.properties` (e.g. `APP_STORE_FILE`, `APP_STORE_PASSWORD`, `APP_KEY_ALIAS`, `APP_KEY_PASSWORD`) read by `signingConfigs.release` and applied via `buildTypes.release.signingConfig`. Create it once with `keytool -genkeypair -v -keystore ~/.android-keystores/<app>.jks -alias <app> -keyalg RSA -keysize 2048 -validity 10000`. Never commit keystores or passwords.
    - Warn the user: losing the key or changing it later breaks in-place updates for friends (they must uninstall first). Back the keystore up.

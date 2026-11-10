@@ -1,0 +1,19 @@
+/** Compare release versions like "v1.10.0", "1.2", "2.0.0-beta.1". Returns -1, 0 or 1. */
+export function compareVersions(a: string, b: string): number {
+  const parse = (v: string) => {
+    const s = v.trim().replace(/^[vV]/, "");
+    const [core, pre = ""] = s.split(/-(.*)/s, 2);
+    return { nums: core.split(/[._]/).map((x) => parseInt(x, 10) || 0), pre };
+  };
+  const x = parse(a), y = parse(b);
+  for (let i = 0; i < Math.max(x.nums.length, y.nums.length); i++) {
+    const d = (x.nums[i] ?? 0) - (y.nums[i] ?? 0);
+    if (d) return d > 0 ? 1 : -1;
+  }
+  if (x.pre === y.pre) return 0;
+  if (!x.pre) return 1; // 1.0.0 > 1.0.0-beta
+  if (!y.pre) return -1;
+  return x.pre.localeCompare(y.pre, undefined, { numeric: true }) > 0 ? 1 : -1;
+}
+
+export const displayVersion = (tag: string) => tag.replace(/^[vV](?=\d)/, "");

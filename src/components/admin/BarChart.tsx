@@ -2,8 +2,8 @@
 import { useState } from "react";
 
 export function BarChart({
-  data, height = 120, label,
-}: { data: { day: string; count: number }[]; height?: number; label: string }) {
+  data, height = 120, label, unit = "download",
+}: { data: { day: string; count: number }[]; height?: number; label: string; unit?: string }) {
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(1, ...data.map((d) => d.count));
   const total = data.reduce((a, d) => a + d.count, 0);
@@ -15,12 +15,12 @@ export function BarChart({
       <figcaption className="text-footnote mb-3 flex h-5 items-center justify-between text-label-2" aria-hidden>
         <span>{sel ? `${fmt(sel.day)}` : `${data.length} days`}</span>
         <span className="font-semibold text-label tabular-nums">
-          {sel ? `${sel.count} download${sel.count === 1 ? "" : "s"}` : `${total} total`}
+          {sel ? `${sel.count} ${unit}${sel.count === 1 ? "" : "s"}` : `${total} total`}
         </span>
       </figcaption>
       <div
         role="img"
-        aria-label={`${label}: ${total} downloads in the last ${data.length} days${total ? `, peak ${peak.count} on ${fmt(peak.day)}` : ""}.`}
+        aria-label={`${label}: ${total} ${unit}s in the last ${data.length} days${total ? `, peak ${peak.count} on ${fmt(peak.day)}` : ""}.`}
         className="flex items-end gap-[3px]"
         style={{ height }}
         onPointerLeave={() => setHover(null)}

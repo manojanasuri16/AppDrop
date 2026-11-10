@@ -10,6 +10,10 @@ import { Section } from "@/components/admin/Field";
 import { ScreenshotManager } from "@/components/admin/ScreenshotManager";
 import { ArrowLeft, ExternalIcon, GlobeIcon, LockIcon, PhoneIcon, RefreshIcon, DownloadIcon } from "@/components/admin/icons";
 import { fmtBytes, fmtDate, fmtNum, timeAgo } from "@/components/admin/format";
+import { Insights } from "@/components/admin/Insights";
+import { UpdateCheckCard } from "@/components/admin/UpdateCheckCard";
+import { appStats } from "@/lib/stats";
+import { env } from "@/lib/env";
 import { importFromRepo, syncNow, updateApp } from "../../actions";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +26,7 @@ export default async function EditAppPage({ params }: { params: Promise<{ id: st
   if (!Number.isSafeInteger(id) || id < 1) notFound();
   const app = await getAppById(id);
   if (!app) notFound();
-  const series = await downloadSeries(30, id);
+  const [series, stats] = await Promise.all([downloadSeries(30, id), appStats(id, 30, app.latest?.tag ?? null)]);
   const a = app.raw;
   const hasRepo = !!app.repoOwner;
 
@@ -128,7 +132,9 @@ export default async function EditAppPage({ params }: { params: Promise<{ id: st
         </div>
       </Section>
 
-      <Section title="Stats">
+      <Insights stats={stats} appId={id} appName={app.name} android={app.kind === "android"} />
+
+      <Section title="Downloads">
         <div className="rounded-2xl bg-elevated p-5" style={{ boxShadow: "var(--shadow-card)" }}>
           <div className="mb-4 flex items-baseline justify-between">
             <h3 className="text-headline">Downloads · last 30 days</h3>
@@ -137,6 +143,12 @@ export default async function EditAppPage({ params }: { params: Promise<{ id: st
           <BarChart data={series} label={`Daily downloads for ${app.name} (${fmtNum(last30)} total)`} />
         </div>
       </Section>
+
+      {app.kind === "android" && (
+        <Section title="Update checker">
+          <UpdateCheckCard endpoint={`${env.siteUrl}/api/public/apps/${app.slug}/latest`} />
+        </Section>
+      )}
 
       <Section title="Danger zone">
         <DeleteApp appId={id} name={app.name} />

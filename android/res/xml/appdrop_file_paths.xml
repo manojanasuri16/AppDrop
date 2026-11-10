@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider paths for AppDropUpdater: APKs are downloaded to <external files dir>/Download/appdrop/ -->
+<paths>
+    <external-files-path name="appdrop_downloads" path="Download/appdrop/" />
+</paths>

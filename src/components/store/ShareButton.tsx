@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ShareSheet } from "./ShareSheet";
+import { withVia } from "./share-url";
 
 type Props = {
   /** Absolute URL, or a path resolved against window.location.origin. */
@@ -33,7 +34,7 @@ export function ShareButton({ url, title, text, variant = "icon", label, classNa
     setAbs(full);
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title, text, url: full });
+        await navigator.share({ title, text, url: withVia(full, "share") });
       } catch (e) {
         if (!(e instanceof DOMException && e.name === "AbortError")) setOpen(true);
       }

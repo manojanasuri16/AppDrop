@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { db, dbReady } from "@/db";
 import { apps, assets, downloads, releases, screenshots, media, type App } from "@/db/schema";
 import { mediaUrl } from "./media";
@@ -73,8 +73,9 @@ async function latestPerApp(appIds: number[]) {
   const rows = await db
     .select({ appId: releases.appId, tag: releases.tag, publishedAt: releases.publishedAt, prerelease: releases.prerelease, size: assets.size })
     .from(releases)
+    .innerJoin(apps, eq(apps.id, releases.appId))
     .leftJoin(assets, and(eq(assets.releaseId, releases.id), eq(assets.isPrimary, true)))
-    .where(inArray(releases.appId, appIds))
+    .where(and(inArray(releases.appId, appIds), or(eq(releases.prerelease, false), eq(apps.includePrereleases, true))))
     .orderBy(desc(releases.publishedAt));
   for (const r of rows) if (!map.has(r.appId)) map.set(r.appId, { tag: r.tag, publishedAt: r.publishedAt, size: r.size });
   return map;
@@ -132,11 +133,11 @@ export async function searchPublicApps(q: string): Promise<AppCard[]> {
   return all.filter((a) => [a.name, a.tagline, a.category, a.developer].some((s) => s.toLowerCase().includes(needle)));
 }
 
-async function loadReleases(appId: number, limit?: number): Promise<ReleaseView[]> {
+async function loadReleases(appId: number, limit?: number, withPrereleases = true): Promise<ReleaseView[]> {
   const rels = await db
     .select()
     .from(releases)
-    .where(eq(releases.appId, appId))
+    .where(withPrereleases ? eq(releases.appId, appId) : and(eq(releases.appId, appId), eq(releases.prerelease, false)))
     .orderBy(desc(releases.publishedAt))
     .limit(limit ?? 1000);
   if (!rels.length) return [];
@@ -169,12 +170,16 @@ async function loadReleases(appId: number, limit?: number): Promise<ReleaseView[
  * Public detail lookup: public + unlisted apps are reachable; drafts only for admins.
  * Pass { admin: true } only after verifying the session.
  */
-export async function getAppBySlug(slug: string, opts: { admin?: boolean; releaseLimit?: number } = {}): Promise<AppDetail | null> {
+export async function getAppBySlug(
+  slug: string,
+  opts: { admin?: boolean; beta?: boolean; releaseLimit?: number } = {},
+): Promise<AppDetail | null> {
   await dbReady();
   const a = await db.query.apps.findFirst({ where: eq(apps.slug, slug) });
   if (!a) return null;
   if (a.visibility === "draft" && !opts.admin) return null;
-  return buildDetail(a, opts.releaseLimit);
+  // Prereleases: visible to beta testers / admins, or to everyone if the app opts in.
+  return buildDetail(a, opts.releaseLimit, !!(opts.admin || opts.beta || a.includePrereleases));
 }
 
 export async function getAppById(id: number): Promise<AppDetail | null> {
@@ -183,9 +188,9 @@ export async function getAppById(id: number): Promise<AppDetail | null> {
   return a ? buildDetail(a) : null;
 }
 
-async function buildDetail(a: App, releaseLimit?: number): Promise<AppDetail> {
+async function buildDetail(a: App, releaseLimit?: number, withPrereleases = true): Promise<AppDetail> {
   const [rels, shots, dl] = await Promise.all([
-    loadReleases(a.id, releaseLimit),
+    loadReleases(a.id, releaseLimit, withPrereleases),
     db
       .select({ mediaId: screenshots.mediaId, width: media.width, height: media.height })
       .from(screenshots)
