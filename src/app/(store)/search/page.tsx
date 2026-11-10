@@ -62,7 +62,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             <p className="mt-1 text-subhead text-label-2">{q ? <>Nothing matched &ldquo;{q}&rdquo;.</> : "No apps in this category yet."}</p>
           </div>
         ) : (
-          <ul className="grid gap-x-12 md:grid-cols-2">
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-x-12 md:grid-cols-[repeat(2,minmax(0,1fr))]">
             {results.map((a, i) => <AppRow key={a.id} app={a} index={i} />)}
           </ul>
         )}
