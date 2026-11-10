@@ -116,6 +116,61 @@ Set the same `ADMIN_PASSWORD`, `ADMIN_TOTP_SECRET`, `SESSION_SECRET` and `GITHUB
 - **Visibility**: draft apps are admin-only, and unlisted apps are never listed in the store.
 - **Indexing**: `robots` metadata is `noindex, nofollow`, and admin responses carry `X-Robots-Tag`.
 
+## Publishing from Claude Code
+
+AppDrop has a small publishing API (`/api/v1`) plus a CLI and a Claude Code skill, so you can say "add this app to AppDrop" in any project and have Claude publish it (metadata, icon, screenshots, GitHub release with the APK, sync).
+
+### Setup
+
+1. On the server, set `APPDROP_API_KEY` (at least 32 characters): `openssl rand -hex 32`. Without it the API is disabled (404).
+2. On your dev machine (Node 18+; `gh` for releases; Chrome for web screenshots):
+   ```bash
+   git clone https://github.com/manojanasuri16/AppDrop ~/AppDrop   # if not already there
+   node ~/AppDrop/scripts/appdrop.mjs login --url https://your-appdrop.example --key <APPDROP_API_KEY>
+   ```
+   The key is stored in `~/.config/appdrop/config.json` (mode 0600). `APPDROP_URL` / `APPDROP_API_KEY` env vars override it.
+3. Install the skill globally:
+   ```bash
+   mkdir -p ~/.claude/skills && ln -s ~/AppDrop/skills/appdrop-publish ~/.claude/skills/appdrop-publish
+   ```
+4. In any app project, tell Claude Code: **"add this app to AppDrop"**.
+
+For private repos, the server's `GITHUB_TOKEN` must include each app repo (see "Creating a GitHub token"). The API can create/update apps and trigger syncs, but cannot delete apps; that stays in `/admin`.
+
+### CLI reference
+
+Run `node scripts/appdrop.mjs <command> --help` for details.
+
+| Command | What it does |
+| --- | --- |
+| `login --url <url> --key <key>` | Verify and save credentials |
+| `init [--kind android\|web] [--force]` | Detect the project in the current folder and write `appdrop.json` |
+| `publish [-m file] [--dry-run] [--skip-icon] [--skip-screenshots] [--json]` | Validate, upload metadata/icon/screenshots, sync |
+| `release --tag vX.Y.Z --apk app.apk [--notes t \| --notes-file f \| --generate-notes] [--title t] [--prerelease]` | Create/update a GitHub release via `gh`, then sync |
+| `status [slug] [--json]` / `list [--json]` | Inspect apps on the server |
+| `screenshot-web <url> [--paths "/,/about"] [--out dir] [--width 390 --height 844 --scale 2] [--dark]` | Headless Chrome screenshots |
+| `screenshot-android [--out dir] [--name 01-home]` | Screenshot from a connected device via `adb` |
+
+### appdrop.json
+
+Paths are relative to the manifest. See `appdrop.example.json`.
+
+| Field | Notes |
+| --- | --- |
+| `slug` | Required. Lowercase-dashes, max 60, immutable |
+| `kind` | `android` or `web` (inferred if omitted) |
+| `name` | Required when creating |
+| `tagline` | Max 120 chars |
+| `description` / `descriptionFile` | Markdown, max 20000 chars; the file wins |
+| `category`, `developer`, `accentColor` (`#rrggbb`), `packageName` | Store listing details |
+| `repo` | `owner/repo` or GitHub URL (required for Android) |
+| `webUrl` | https URL (required for web) |
+| `assetPattern` | Substring or glob to pick the APK when a release has several |
+| `includePrereleases`, `featured`, `sortOrder` | Booleans / integer |
+| `visibility` | `public`, `unlisted` or `draft` (server default `draft`) |
+| `icon` | Path to a PNG/JPEG/WebP/GIF, max 4 MB (no SVG) |
+| `screenshots` | Ordered image paths, max 12, replaced on every `publish` |
+
 ## Scripts
 
 | Command | What it does |

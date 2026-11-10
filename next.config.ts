@@ -27,8 +27,8 @@ const securityHeaders = [
 
 const config: NextConfig = {
   poweredByHeader: false,
-  // Docker/self-host uses the standalone server; Netlify's Next.js adapter manages its own output.
-  ...(process.env.NETLIFY ? {} : { output: "standalone" as const }),
+  // Docker/self-host uses the standalone server; Vercel/Netlify manage their own output.
+  ...(process.env.NETLIFY || process.env.VERCEL ? {} : { output: "standalone" as const }),
   serverExternalPackages: ["@libsql/client", "libsql"],
   experimental: { serverActions: { bodySizeLimit: "12mb" } },
   async headers() {

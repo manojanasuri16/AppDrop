@@ -27,6 +27,11 @@ export const env = {
   get adminTotpSecret() {
     return process.env.ADMIN_TOTP_SECRET?.replace(/\s/g, "") || undefined;
   },
+  /** Bearer key for the publishing API (/api/v1). API is disabled unless set (≥ 32 chars). */
+  get apiKey() {
+    const k = process.env.APPDROP_API_KEY;
+    return k && k.length >= 32 ? k : undefined;
+  },
   get sessionSecret() {
     const s = required("SESSION_SECRET");
     if (s.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters");

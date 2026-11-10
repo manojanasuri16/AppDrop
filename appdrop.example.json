@@ -1,0 +1,23 @@
+{
+  "slug": "todo-zen",
+  "kind": "android",
+  "name": "Todo Zen",
+  "tagline": "A calm, offline-first to-do list with gentle reminders",
+  "descriptionFile": "appdrop/description.md",
+  "category": "Productivity",
+  "developer": "Manoj",
+  "accentColor": "#6200ee",
+  "packageName": "com.example.todozen",
+  "repo": "manojanasuri16/todo-zen",
+  "assetPattern": "*-release.apk",
+  "includePrereleases": false,
+  "visibility": "public",
+  "featured": false,
+  "sortOrder": 0,
+  "icon": "app/src/main/ic_launcher-playstore.png",
+  "screenshots": [
+    "appdrop/screenshots/01-home.png",
+    "appdrop/screenshots/02-add-task.png",
+    "appdrop/screenshots/03-reminders.png"
+  ]
+}
