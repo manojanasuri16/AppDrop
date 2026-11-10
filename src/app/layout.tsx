@@ -7,7 +7,14 @@ import { THEME_SCRIPT } from "@/components/theme/theme-script";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "AppDrop";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  openGraph: { siteName, type: "website" },
+  twitter: { card: "summary_large_image" },
   title: { default: siteName, template: `%s · ${siteName}` },
   description: "Apps made by a friend — download Android apps and open web apps, straight from the source.",
   applicationName: siteName,

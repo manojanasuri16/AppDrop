@@ -3,6 +3,8 @@ import { listPublicApps, type AppCard } from "@/lib/queries";
 import { AppCardLarge } from "@/components/store/AppCardLarge";
 import { AppRow } from "@/components/store/AppRow";
 import { AppTile } from "@/components/store/AppTile";
+import { ShareStoreCard } from "@/components/store/ShareStoreCard";
+import { getSiteOrigin, qrSvg } from "@/components/store/share-server";
 import { Shelf } from "@/components/store/Shelf";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +15,8 @@ function Tiles({ apps }: { apps: AppCard[] }) {
 
 export default async function HomePage() {
   const apps = await listPublicApps();
+  const origin = await getSiteOrigin();
+  const qr = await qrSvg(origin);
   const date = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
   const featured = apps.filter((a) => a.featured);
@@ -73,8 +77,12 @@ export default async function HomePage() {
               {apps.map((a, i) => <AppRow key={a.id} app={a} index={i} />)}
             </ul>
           </section>
+
+          <ShareStoreCard url={origin} qr={qr} />
         </div>
       )}
+
+      {apps.length === 0 && <div className="mt-2"><ShareStoreCard url={origin} qr={qr} /></div>}
     </div>
   );
 }

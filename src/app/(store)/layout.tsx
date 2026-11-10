@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { InstallButton } from "@/components/pwa/InstallButton";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { ShareButton } from "@/components/store/ShareButton";
+import { STORE_SHARE_TEXT } from "@/components/store/ShareStoreCard";
+import { getSiteOrigin, qrSvg } from "@/components/store/share-server";
 import { TabBar, TopLinks } from "@/components/store/StoreNav";
 
-export default function StoreLayout({ children }: { children: React.ReactNode }) {
+export default async function StoreLayout({ children }: { children: React.ReactNode }) {
+  const origin = await getSiteOrigin();
+  const qr = await qrSvg(origin);
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
       <header className="material hairline-b safe-top sticky top-0 z-30">
@@ -21,6 +26,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           </div>
           <div className="-mr-2 flex items-center gap-1">
             <InstallButton />
+            <ShareButton url={origin} title="AppDrop" text={STORE_SHARE_TEXT} variant="icon" label="Share AppDrop" qrSvg={qr} className="text-label-2! hover:text-label!" />
             <ThemeToggle />
           </div>
         </div>

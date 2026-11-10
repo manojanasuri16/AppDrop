@@ -10,6 +10,8 @@ import { Markdown } from "@/components/store/Markdown";
 import { RelativeTime } from "@/components/store/RelativeTime";
 import { ScreenshotGallery } from "@/components/store/ScreenshotGallery";
 import { StickyAppBar } from "@/components/store/StickyAppBar";
+import { ShareButton } from "@/components/store/ShareButton";
+import { getSiteOrigin, qrSvg } from "@/components/store/share-server";
 import { InstallHelp } from "@/components/store/InstallHelp";
 import { CopyButton } from "@/components/store/CopyButton";
 import { Expandable } from "@/components/store/Expandable";
@@ -24,7 +26,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: app.name,
     description: app.tagline,
-    openGraph: { title: app.name, description: app.tagline, ...(app.iconUrl ? { images: [{ url: app.iconUrl }] } : {}) },
+    // openGraph.images comes from the sibling opengraph-image.tsx file convention.
+    openGraph: { title: app.name, description: app.tagline },
   };
 }
 
@@ -59,11 +62,14 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
   const unavailable = !web && !primary;
   const href = links.get(app.slug);
   const digest = cleanDigest(primary?.digest);
+  const appUrl = `${await getSiteOrigin()}${links.app(app.slug)}`;
+  const appQr = await qrSvg(appUrl);
+  const shareText = app.tagline ? `${app.name} — ${app.tagline}` : `Check out ${app.name} on AppDrop`;
   const updated = web ? app.raw.updatedAt : (app.latestDate ?? app.raw.updatedAt);
 
   return (
     <article className="pb-6">
-      <StickyAppBar targetId="app-header" name={app.name} kind={app.kind} iconUrl={app.iconUrl} accentColor={app.accentColor} href={href} disabled={unavailable} />
+      <StickyAppBar targetId="app-header" name={app.name} kind={app.kind} iconUrl={app.iconUrl} accentColor={app.accentColor} href={href} disabled={unavailable} shareUrl={appUrl} shareText={shareText} qrSvg={appQr} />
 
       {app.visibility === "draft" && (
         <p role="status" className="mt-4 rounded-xl bg-warning/15 px-4 py-2.5 text-subhead font-medium text-label">Draft — only you can see this</p>
@@ -82,6 +88,7 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
           {app.tagline && <p className="truncate text-footnote text-label-3">{app.developer}</p>}
           <div className="mt-auto flex items-center gap-3 pt-3">
             <GetButton app={app} href={href} size="lg" disabled={unavailable} />
+            <ShareButton url={appUrl} title={app.name} text={shareText} variant="icon" label={`Share ${app.name}`} qrSvg={appQr} className="-mx-1" />
             <p className="min-w-0 text-caption text-label-3">
               {unavailable ? "No release yet" : web ? hostname(app.webUrl) : <>Version {latest?.tag}<br />{formatBytes(primary?.size)}</>}
             </p>
@@ -165,6 +172,7 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
               </dd>
             </div>
           )}
+          <ShareButton url={appUrl} title={app.name} text={shareText} variant="row" label="Share App" qrSvg={appQr} />
         </dl>
       </section>
     </article>
