@@ -8,11 +8,13 @@ type Props = {
 };
 
 export function AppIcon({ name, iconUrl, accentColor, size = 64, className = "", priority }: Props) {
+  // Must be a block-level box: width/height/border-radius are ignored on inline elements,
+  // which made real (uploaded) icons render at their natural 512px size with square corners.
   const base = `squircle relative shrink-0 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 ${className}`;
   const style = { width: size, height: size };
   if (iconUrl) {
     return (
-      <span className={`${base} bg-secondary`} style={style}>
+      <span className={`${base} block bg-secondary`} style={style}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={iconUrl}
@@ -21,7 +23,7 @@ export function AppIcon({ name, iconUrl, accentColor, size = 64, className = "",
           height={size}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
-          className="h-full w-full object-cover"
+          className="block h-full w-full object-cover"
         />
       </span>
     );
