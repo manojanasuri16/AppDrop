@@ -2,6 +2,7 @@ import Link from "next/link";
 import { links, type AppCard } from "@/lib/queries";
 import { AppIcon } from "./AppIcon";
 import { GetButton } from "./GetButton";
+import { ShareButton } from "./ShareButton";
 
 export function AppRow({ app, index = 0 }: { app: AppCard; index?: number }) {
   return (
@@ -20,7 +21,16 @@ export function AppRow({ app, index = 0 }: { app: AppCard; index?: number }) {
             {app.tagline ? app.category : app.kind === "web" ? "Web app" : "Android"}
           </p>
         </Link>
-        <GetButton app={app} href={links.get(app.slug)} />
+        <div className="-mr-2 flex shrink-0 items-center gap-0.5">
+          <GetButton app={app} href={links.get(app.slug)} />
+          <ShareButton
+            url={links.app(app.slug)}
+            title={app.name}
+            text={app.tagline ? `${app.name} — ${app.tagline}` : `Check out ${app.name} on AppDrop`}
+            variant="icon"
+            label={`Share ${app.name}`}
+          />
+        </div>
       </div>
     </li>
   );
