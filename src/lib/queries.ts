@@ -126,12 +126,6 @@ async function listApps({ publicOnly }: { publicOnly: boolean }): Promise<AppCar
     .filter((c) => !publicOnly || c.kind === "web" || c.latestVersion);
 }
 
-export async function searchPublicApps(q: string): Promise<AppCard[]> {
-  const needle = q.trim().toLowerCase();
-  const all = await listPublicApps();
-  if (!needle) return all;
-  return all.filter((a) => [a.name, a.tagline, a.category, a.developer].some((s) => s.toLowerCase().includes(needle)));
-}
 
 async function loadReleases(appId: number, limit?: number, withPrereleases = true): Promise<ReleaseView[]> {
   const rels = await db
