@@ -7,7 +7,6 @@ import { getSiteOrigin, qrSvg } from "@/components/store/share-server";
 import { withVia } from "@/components/store/share-url";
 import { isBetaViewer } from "@/lib/beta";
 import { isAdmin } from "@/lib/auth";
-import { DownloadTray } from "@/components/store/DownloadTray";
 import { TabBar, TopLinks } from "@/components/store/StoreNav";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
@@ -55,7 +54,6 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         <p className="text-caption text-label-3">Made with care. Apps are distributed directly from GitHub Releases.</p>
       </footer>
 
-      <DownloadTray />
       <TabBar />
     </div>
   );

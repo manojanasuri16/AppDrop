@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { links, type AppCard } from "@/lib/queries";
 import { AppIcon } from "./AppIcon";
+import { DownloadLine } from "./DownloadLine";
 import { GetButton } from "./GetButton";
 import { ShareButton } from "./ShareButton";
 
@@ -17,9 +18,11 @@ export function AppRow({ app, index = 0 }: { app: AppCard; index?: number }) {
         <Link href={links.app(app.slug)} className="min-w-0 flex-1 rounded-md">
           <p className="truncate text-headline text-label">{app.name}</p>
           <p className="truncate text-footnote text-label-2">{app.tagline || app.category}</p>
-          <p className="truncate text-caption text-label-3">
-            {app.tagline ? app.category : app.kind === "web" ? "Web app" : "Android"}
-          </p>
+          <DownloadLine href={links.get(app.slug)} enabled={app.kind !== "web"}>
+            <p className="truncate text-caption text-label-3">
+              {app.tagline ? app.category : app.kind === "web" ? "Web app" : "Android"}
+            </p>
+          </DownloadLine>
         </Link>
         <div className="-mr-2 flex shrink-0 items-center gap-0.5">
           <GetButton app={app} href={links.get(app.slug)} />

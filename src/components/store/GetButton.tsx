@@ -58,10 +58,11 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
     );
   }
 
-  if (st.status === "ready") {
+  if (st.status === "ready" || st.status === "saved") {
+    const saved = st.status === "saved";
     return (
-      <button type="button" onClick={() => saveDownload(key)} aria-label={`Install ${app.name}`} className={`${cls} ${className}`}>
-        {text("Install")}
+      <button type="button" onClick={() => saveDownload(key)} aria-label={`${saved ? "Install" : "Save"} ${app.name}`} className={`${size === "lg" ? "btn-primary" : "btn-get"} ${saved ? "" : "min-w-[4.5rem]"} ${className}`}>
+        {text(saved ? "Install" : "Save")}
       </button>
     );
   }
