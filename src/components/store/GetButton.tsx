@@ -49,11 +49,10 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
         type="button"
         onClick={() => cancelDownload(key)}
         aria-label={`Cancel download of ${app.name}${pct !== null ? `, ${pct}% done` : ""}`}
-        className={`${size === "lg" ? "btn-secondary min-w-28 gap-2.5" : "btn-get min-w-[5.5rem] gap-1.5"} ${className}`}
+        className={`${size === "lg" ? "btn-secondary min-w-28 gap-2.5 whitespace-nowrap" : "btn-get min-w-[5.5rem] gap-1.5"} ${className}`}
       >
         <Ring pct={pct} />
         <span className="tabular-nums">{pct !== null ? `${pct}%` : "…"}</span>
-        {size === "lg" && st.total > 0 && <span className="text-footnote font-normal text-label-2 tabular-nums">{mb(st.loaded)} / {mb(st.total)}</span>}
       </button>
     );
   }
@@ -80,7 +79,7 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
 }
 
 function mb(n: number) {
-  return `${(n / 1048576).toFixed(n < 10485760 ? 1 : 0)} MB`;
+  return `${(n / 1e6).toFixed(n < 1e60 ? 1 : 0)} MB`;
 }
 
 /** Circular progress with a stop square, like the App Store. */

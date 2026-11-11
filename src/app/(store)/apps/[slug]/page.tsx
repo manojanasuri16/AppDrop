@@ -5,6 +5,7 @@ import { getAppBySlug, links } from "@/lib/queries";
 import { isAdmin } from "@/lib/auth";
 import { refreshIfStale } from "@/lib/sync";
 import { AppIcon } from "@/components/store/AppIcon";
+import { DownloadLine } from "@/components/store/DownloadLine";
 import { GetButton } from "@/components/store/GetButton";
 import { Markdown } from "@/components/store/Markdown";
 import { RelativeTime } from "@/components/store/RelativeTime";
@@ -95,9 +96,11 @@ export default async function AppPage({ params, searchParams }: { params: Promis
           <div className="mt-auto flex items-center gap-3 pt-3">
             <GetButton app={app} href={href} size="lg" disabled={unavailable} />
             <ShareButton url={appUrl} title={app.name} text={shareText} variant="icon" label={`Share ${app.name}`} qrSvg={appQr} className="-mx-1" />
+            <DownloadLine href={href} enabled={!web}>
             <p className="min-w-0 text-caption text-label-3">
               {unavailable ? "No release yet" : web ? hostname(app.webUrl) : <>{latest?.prerelease ? "Beta" : "Version"} {latest?.tag}<br />{formatBytes(primary?.size)}</>}
             </p>
+            </DownloadLine>
           </div>
         </div>
       </header>

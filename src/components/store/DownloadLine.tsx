@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import { getDownload, subscribeDownloads } from "@/lib/client-downloads";
 
 const idle = { status: "idle", loaded: 0, total: 0 } as const;
-const mb = (n: number) => `${(n / 1048576).toFixed(1)}`;
+const mb = (n: number) => `${(n / 1e6).toFixed(1)}`;
 
 /** Replaces a row's caption with live download progress for that app; renders children otherwise. */
 export function DownloadLine({ href, enabled = true, children }: { href: string; enabled?: boolean; children: React.ReactNode }) {
