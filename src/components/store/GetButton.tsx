@@ -61,10 +61,10 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
     <button
       type="button"
       onClick={() => (st.status === "saved" ? saveDownload(key) : startDownload(key, href, app.name, app.latestSize))}
-      aria-label={`${st.status === "error" ? "Retry download of" : "Get"} ${app.name}`}
+      aria-label={`${st.status === "error" ? "Retry download of" : st.status === "saved" ? "Saved, tap to save again:" : "Get"} ${app.name}`}
       className={`${cls} ${className}`}
     >
-      {text(st.status === "error" ? "Retry" : "Get")}
+      {text(st.status === "error" ? "Retry" : st.status === "saved" ? "Saved" : "Get")}
     </button>
   );
 }
