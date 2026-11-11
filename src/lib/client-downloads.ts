@@ -11,6 +11,7 @@ type Entry = DownloadState & { blob?: Blob; filename: string; name?: string; ctr
 const entries = new Map<string, Entry>();
 const snapshots = new Map<string, DownloadState>();
 const listeners = new Set<() => void>();
+let help: { name: string; filename: string } | null = null;
 const idle: DownloadState = { status: "idle", loaded: 0, total: 0 };
 
 function set(key: string, patch: Partial<Entry>) {
@@ -99,4 +100,24 @@ export function installDownload(key: string) {
     return;
   }
   saveDownload(key);
+}
+
+export function getInstallHelp() {
+  return help;
+}
+
+/** Shows the "already saved, install it from your phone" dialog. */
+export function showInstallHelp(key: string) {
+  const e = entries.get(key);
+  help = { name: e?.name ?? "This app", filename: e?.filename ?? "the APK" };
+  listeners.forEach((l) => l());
+}
+
+export function closeInstallHelp() {
+  help = null;
+  listeners.forEach((l) => l());
+}
+
+export function openDownloadsApp() {
+  window.location.href = "intent:#Intent;action=android.intent.action.VIEW_DOWNLOADS;end";
 }

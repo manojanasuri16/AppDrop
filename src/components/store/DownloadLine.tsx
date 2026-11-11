@@ -24,7 +24,7 @@ export function DownloadLine({ href, enabled = true, children }: { href: string;
         </>
       )}
       {st.status === "ready" && <p className="truncate text-caption text-label-2">Downloaded — tap Save</p>}
-      {st.status === "saved" && <p className="text-caption text-label-2">Saved — tap Install, then tap the APK in Downloads</p>}
+      {st.status === "saved" && <p className="text-caption text-label-2">Saved to your phone — tap Saved for install steps</p>}
       {st.status === "error" && <p className="truncate text-caption text-destructive">Download failed</p>}
     </div>
   );
