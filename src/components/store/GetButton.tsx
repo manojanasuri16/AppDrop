@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { AppCard } from "@/lib/queries";
-import { cancelDownload, getDownload, showInstallHelp, saveDownload, startDownload, subscribeDownloads } from "@/lib/client-downloads";
+import { cancelDownload, getDownload, saveDownload, startDownload, subscribeDownloads } from "@/lib/client-downloads";
 
 type Props = {
   app: Pick<AppCard, "kind" | "name"> & { latestSize?: number | null };
@@ -57,19 +57,10 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
     );
   }
 
-  if (st.status === "ready" || st.status === "saved") {
-    const saved = st.status === "saved";
-    return (
-      <button type="button" onClick={() => (saved ? showInstallHelp(key) : saveDownload(key))} aria-label={`${saved ? "Saved" : "Save"} ${app.name}`} className={`${size === "lg" ? "btn-primary" : "btn-get"} ${saved ? "" : "min-w-[4.5rem]"} ${className}`}>
-        {text(saved ? "Saved" : "Save")}
-      </button>
-    );
-  }
-
   return (
     <button
       type="button"
-      onClick={() => startDownload(key, href, app.name, app.latestSize)}
+      onClick={() => (st.status === "saved" ? saveDownload(key) : startDownload(key, href, app.name, app.latestSize))}
       aria-label={`${st.status === "error" ? "Retry download of" : "Get"} ${app.name}`}
       className={`${cls} ${className}`}
     >

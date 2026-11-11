@@ -23,8 +23,7 @@ export function DownloadLine({ href, enabled = true, children }: { href: string;
           </div>
         </>
       )}
-      {st.status === "ready" && <p className="truncate text-caption text-label-2">Downloaded — tap Save</p>}
-      {st.status === "saved" && <p className="text-caption text-label-2">Saved to your phone — tap Saved for install steps</p>}
+      {(st.status === "saved" || st.status === "ready") && <p className="text-caption text-label-2">Downloaded — open it from the notification to install</p>}
       {st.status === "error" && <p className="truncate text-caption text-destructive">Download failed</p>}
     </div>
   );

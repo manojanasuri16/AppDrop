@@ -11,7 +11,6 @@ type Entry = DownloadState & { blob?: Blob; filename: string; name?: string; ctr
 const entries = new Map<string, Entry>();
 const snapshots = new Map<string, DownloadState>();
 const listeners = new Set<() => void>();
-let help: { name: string; filename: string } | null = null;
 const idle: DownloadState = { status: "idle", loaded: 0, total: 0 };
 
 function set(key: string, patch: Partial<Entry>) {
@@ -64,6 +63,7 @@ export async function startDownload(key: string, href: string, name?: string, ex
     }
     const blob = new Blob(chunks, { type: "application/vnd.android.package-archive" });
     set(key, { status: "ready", loaded: blob.size, total: blob.size, blob, ctrl: undefined });
+    saveDownload(key); // hand it to the browser right away, like a normal download
   } catch (e) {
     if (ctrl.signal.aborted) set(key, { ...idle, ctrl: undefined });
     else set(key, { status: "error", loaded: 0, total: 0, ctrl: undefined });
@@ -89,23 +89,3 @@ export function saveDownload(key: string) {
   set(key, { status: "saved" });
 }
 
-export function getInstallHelp() {
-  return help;
-}
-
-/** Shows the "already saved, install it from your phone" dialog. */
-export function showInstallHelp(key: string) {
-  const e = entries.get(key);
-  help = { name: e?.name ?? "This app", filename: e?.filename ?? "the APK" };
-  listeners.forEach((l) => l());
-}
-
-export function closeInstallHelp() {
-  help = null;
-  listeners.forEach((l) => l());
-}
-
-/** Best effort: asks Chrome to open Android's Downloads screen. Chrome may ignore it. */
-export function openDownloadsApp() {
-  window.location.href = "intent:#Intent;action=android.intent.action.VIEW_DOWNLOADS;end";
-}
