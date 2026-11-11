@@ -12,7 +12,7 @@ export function DownloadLine({ href, enabled = true, children }: { href: string;
   if (st.status === "idle") return <>{children}</>;
   const pct = st.total > 0 ? Math.min(100, (st.loaded / st.total) * 100) : null;
   return (
-    <div role="status" className="mt-0.5 min-w-0 flex-1">
+    <div role="status" className="mt-2 min-w-0">
       {st.status === "downloading" && (
         <>
           <p className="truncate text-caption text-label-2 tabular-nums" title="">
