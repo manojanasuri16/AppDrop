@@ -87,3 +87,16 @@ export function saveDownload(key: string) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
   set(key, { status: "saved" });
 }
+
+/**
+ * Browsers can't launch the package installer on a file they saved, so open Android's Downloads
+ * app instead (via an intent link) where one tap on the APK starts the normal install screen.
+ * Falls back to saving the file again on anything that isn't Android.
+ */
+export function installDownload(key: string) {
+  if (/android/i.test(navigator.userAgent)) {
+    window.location.href = "intent:#Intent;action=android.intent.action.VIEW_DOWNLOADS;end";
+    return;
+  }
+  saveDownload(key);
+}
