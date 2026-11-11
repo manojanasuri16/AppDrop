@@ -5,7 +5,7 @@ import type { AppCard } from "@/lib/queries";
 import { cancelDownload, getDownload, saveDownload, startDownload, subscribeDownloads } from "@/lib/client-downloads";
 
 type Props = {
-  app: Pick<AppCard, "kind" | "name"> & { slug?: string };
+  app: Pick<AppCard, "kind" | "name"> & { latestSize?: number | null };
   /** Download / open URL (links.get). */
   href: string;
   size?: "sm" | "lg";
@@ -49,10 +49,10 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
         type="button"
         onClick={() => cancelDownload(key)}
         aria-label={`Cancel download of ${app.name}${pct !== null ? `, ${pct}% done` : ""}`}
-        className={`${size === "lg" ? "btn-secondary min-w-28 gap-2.5" : "btn-get gap-1.5"} ${className}`}
+        className={`${size === "lg" ? "btn-secondary min-w-28 gap-2.5" : "btn-get min-w-[5.5rem] gap-1.5"} ${className}`}
       >
         <Ring pct={pct} />
-        {size === "lg" && <span className="tabular-nums">{pct !== null ? `${pct}%` : "…"}</span>}
+        <span className="tabular-nums">{pct !== null ? `${pct}%` : "…"}</span>
         {size === "lg" && st.total > 0 && <span className="text-footnote font-normal text-label-2 tabular-nums">{mb(st.loaded)} / {mb(st.total)}</span>}
       </button>
     );
@@ -70,7 +70,7 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
   return (
     <button
       type="button"
-      onClick={() => startDownload(key, href, app.name)}
+      onClick={() => startDownload(key, href, app.name, app.latestSize)}
       aria-label={`${st.status === "error" ? "Retry download of" : "Get"} ${app.name}`}
       className={`${cls} ${className}`}
     >

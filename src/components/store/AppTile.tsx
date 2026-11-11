@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { links, type AppCard } from "@/lib/queries";
 import { AppIcon } from "./AppIcon";
+import { DownloadLine } from "./DownloadLine";
 import { GetButton } from "./GetButton";
 
 /** Compact shelf tile: icon, name, category, GET. */
@@ -12,7 +13,9 @@ export function AppTile({ app }: { app: AppCard }) {
       </Link>
       <Link href={links.app(app.slug)} className="mt-2.5 block rounded-md">
         <p className="truncate text-subhead font-semibold text-label">{app.name}</p>
-        <p className="truncate text-caption text-label-2">{app.category}</p>
+        <DownloadLine href={links.get(app.slug)} enabled={app.kind !== "web"}>
+          <p className="truncate text-caption text-label-2">{app.category}</p>
+        </DownloadLine>
       </Link>
       <div className="mt-2">
         <GetButton app={app} href={links.get(app.slug)} />

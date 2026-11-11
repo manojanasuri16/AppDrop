@@ -31,19 +31,19 @@ export function getDownload(key: string): DownloadState {
   return snapshots.get(key) ?? idle;
 }
 
-export async function startDownload(key: string, href: string, name?: string) {
+export async function startDownload(key: string, href: string, name?: string, expectedSize?: number | null) {
   if (getDownload(key).status === "downloading") return;
   if (typeof fetch === "undefined") {
     window.location.href = href;
     return;
   }
   const ctrl = new AbortController();
-  set(key, { status: "downloading", loaded: 0, total: 0, blob: undefined, ctrl, name });
+  set(key, { status: "downloading", loaded: 0, total: expectedSize || 0, blob: undefined, ctrl, name });
   try {
     const url = href + (href.includes("?") ? "&" : "?") + "stream=1";
     const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
     if (!res.ok || !res.body) throw new Error(String(res.status));
-    const total = Number(res.headers.get("content-length")) || 0;
+    const total = Number(res.headers.get("content-length")) || expectedSize || 0;
     const m = /filename="?([^";]+)"?/.exec(res.headers.get("content-disposition") ?? "");
     set(key, { total, filename: m?.[1] ?? "app.apk" });
     const reader = res.body.getReader();

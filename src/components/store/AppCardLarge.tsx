@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { links, type AppCard } from "@/lib/queries";
 import { AppIcon } from "./AppIcon";
+import { DownloadLine } from "./DownloadLine";
 import { GetButton } from "./GetButton";
 
 export function AppCardLarge({ app, index = 0, className = "" }: { app: AppCard; index?: number; className?: string }) {
@@ -25,7 +26,9 @@ export function AppCardLarge({ app, index = 0, className = "" }: { app: AppCard;
         <AppIcon name={app.name} iconUrl={app.iconUrl} accentColor={app.accentColor} size={52} />
         <div className="pointer-events-none min-w-0 flex-1">
           <p className="truncate text-subhead font-semibold text-label">{app.name}</p>
-          <p className="truncate text-caption text-label-2">{app.category}</p>
+          <DownloadLine href={links.get(app.slug)} enabled={app.kind !== "web"}>
+            <p className="truncate text-caption text-label-2">{app.category}</p>
+          </DownloadLine>
         </div>
         <GetButton app={app} href={links.get(app.slug)} />
       </div>
