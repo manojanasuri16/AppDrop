@@ -47,7 +47,7 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
     return (
       <button
         type="button"
-        onClick={() => cancelDownload(key)}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); cancelDownload(key); }}
         aria-label={`Cancel download of ${app.name}${pct !== null ? `, ${pct}% done` : ""}`}
         className={`${size === "lg" ? "btn-secondary min-w-28 gap-2.5 whitespace-nowrap" : "btn-get min-w-[5.5rem] gap-1.5"} ${className}`}
       >
@@ -60,7 +60,12 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
   return (
     <button
       type="button"
-      onClick={() => (st.status === "saved" ? saveDownload(key) : startDownload(key, href, app.name, app.latestSize))}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (st.status === "saved") saveDownload(key);
+        else startDownload(key, href, app.name, app.latestSize);
+      }}
       aria-label={`${st.status === "error" ? "Retry download of" : st.status === "saved" ? "Saved, tap to save again:" : "Get"} ${app.name}`}
       className={`${cls} ${className}`}
     >

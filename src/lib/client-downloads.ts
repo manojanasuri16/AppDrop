@@ -82,6 +82,10 @@ export function saveDownload(key: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = e.filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  // Never let this synthetic click reach any link or card handler on the page.
+  a.addEventListener("click", (ev) => ev.stopPropagation());
   document.body.appendChild(a);
   a.click();
   a.remove();
