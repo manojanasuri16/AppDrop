@@ -69,7 +69,7 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
   return (
     <button
       type="button"
-      onClick={() => startDownload(key, href)}
+      onClick={() => startDownload(key, href, app.name)}
       aria-label={`${st.status === "error" ? "Retry download of" : "Get"} ${app.name}`}
       className={`${cls} ${className}`}
     >

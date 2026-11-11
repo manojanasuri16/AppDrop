@@ -6,11 +6,13 @@
  * installer flow when the user taps Install.
  */
 export type DownloadState = { status: "idle" | "downloading" | "ready" | "error"; loaded: number; total: number };
-type Entry = DownloadState & { blob?: Blob; filename: string; ctrl?: AbortController };
+type Entry = DownloadState & { blob?: Blob; filename: string; name?: string; ctrl?: AbortController };
+export type TrayItem = DownloadState & { key: string; name: string };
 
 const entries = new Map<string, Entry>();
 const snapshots = new Map<string, DownloadState>();
 const listeners = new Set<() => void>();
+let tray: TrayItem[] = [];
 const idle: DownloadState = { status: "idle", loaded: 0, total: 0 };
 
 function set(key: string, patch: Partial<Entry>) {
@@ -18,6 +20,18 @@ function set(key: string, patch: Partial<Entry>) {
   entries.set(key, next);
   // New object identity per change so useSyncExternalStore sees an update; stable otherwise.
   snapshots.set(key, { status: next.status, loaded: next.loaded, total: next.total });
+  tray = [...entries].filter(([, e]) => e.status !== "idle").map(([key, e]) => ({ key, name: e.name ?? "App", status: e.status, loaded: e.loaded, total: e.total }));
+  listeners.forEach((l) => l());
+}
+
+export function getTray(): TrayItem[] {
+  return tray;
+}
+
+export function dismissDownload(key: string) {
+  entries.delete(key);
+  snapshots.delete(key);
+  tray = tray.filter((t) => t.key !== key);
   listeners.forEach((l) => l());
 }
 
@@ -30,14 +44,14 @@ export function getDownload(key: string): DownloadState {
   return snapshots.get(key) ?? idle;
 }
 
-export async function startDownload(key: string, href: string) {
+export async function startDownload(key: string, href: string, name?: string) {
   if (getDownload(key).status === "downloading") return;
   if (typeof fetch === "undefined") {
     window.location.href = href;
     return;
   }
   const ctrl = new AbortController();
-  set(key, { status: "downloading", loaded: 0, total: 0, blob: undefined, ctrl });
+  set(key, { status: "downloading", loaded: 0, total: 0, blob: undefined, ctrl, name });
   try {
     const url = href + (href.includes("?") ? "&" : "?") + "stream=1";
     const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
