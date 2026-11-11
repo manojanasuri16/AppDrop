@@ -5,16 +5,14 @@ import { BLOCK_MESSAGES, fetchTopics, getPushState, PushError, subscribeTopic, u
 
 type Props = {
   topic: string;
-  /** "app": compact bell pill for the app header. "store": full-width toggle card content. */
+  /** "app": icon-only bell for the app header. "store": full-width toggle card content. */
   variant?: "app" | "store";
   className?: string;
 };
 
-const HINT_KEY = "appdrop:notify-hint";
-
 function Bell({ filled }: { filled: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M6 9a6 6 0 1 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z" />
       <path d="M10 19a2 2 0 0 0 4 0" />
     </svg>
@@ -71,16 +69,6 @@ function useTopic(topic: string) {
 
 export function NotifyButton({ topic, variant = "app", className = "" }: Props) {
   const { state, on, pending, error, toggle } = useTopic(topic);
-  const [hint, setHint] = useState(false);
-
-  useEffect(() => {
-    try { if (!localStorage.getItem(HINT_KEY)) setHint(true); } catch { /* ignore */ }
-  }, []);
-  useEffect(() => {
-    if (!on) return;
-    try { localStorage.setItem(HINT_KEY, "1"); } catch { /* ignore */ }
-    setHint(false);
-  }, [on]);
 
   if (!state?.available) return null;
 
@@ -112,20 +100,22 @@ export function NotifyButton({ topic, variant = "app", className = "" }: Props) 
     );
   }
 
+  // Icon only, the same size and weight as the share icon beside it: a filled bell means it is on.
   return (
-    <div className={className}>
+    <div className={`relative shrink-0 ${className}`}>
       <button
         type="button"
         aria-pressed={on}
+        aria-label={on ? "Stop notifying me about new versions" : "Notify me about new versions"}
+        title={on ? "Notifications on" : "Notify me about new versions"}
         disabled={pending}
         onClick={toggle}
-        className={`pressable inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-subhead font-semibold transition-colors disabled:opacity-60 ${on ? "bg-tint/15 text-tint" : "bg-fill text-tint hover:bg-fill-strong"}`}
+        className="pressable flex h-11 w-11 items-center justify-center rounded-full text-tint hover:bg-fill disabled:opacity-60"
       >
         <Bell filled={on} />
-        {on ? "Notifying ✓" : "Notify me"}
       </button>
-      <p role="status" aria-live="polite" className={error ? "mt-1.5 max-w-[34ch] text-footnote text-danger" : hint && !on ? "mt-1.5 max-w-[34ch] text-footnote text-label-3" : "sr-only"}>
-        {error ?? (hint && !on ? "Get a notification when a new version is out." : on ? "Notifications on for this app" : "")}
+      <p role="status" aria-live="polite" className={error ? "absolute right-0 top-full z-10 mt-1 w-60 rounded-xl bg-elevated p-3 text-footnote text-danger shadow-card ring-1 ring-black/5 dark:ring-white/10" : "sr-only"}>
+        {error ?? (on ? "Notifications on for this app" : "")}
       </p>
     </div>
   );

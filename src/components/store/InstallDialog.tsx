@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { closeInstallHelp, getInstallHelp, openDownloadsApp, subscribeDownloads } from "@/lib/client-downloads";
+import { closeInstallHelp, getInstallHelp, subscribeDownloads } from "@/lib/client-downloads";
 
 /** Tells the user where the saved APK is and how to install it from the phone. */
 export function InstallDialog() {
@@ -28,15 +28,18 @@ export function InstallDialog() {
           The app is already downloaded and saved in your phone&apos;s <strong className="font-semibold text-label">Downloads</strong>. Install it from there:
         </p>
         <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-callout text-label-2">
-          <li>Open your phone&apos;s <strong className="font-semibold text-label">Downloads</strong> (or tap the download notification).</li>
+          {android ? (
+            <li>Tap the <strong className="font-semibold text-label">Download complete</strong> notification, or open this browser&apos;s menu (<strong className="font-semibold text-label">⋮</strong>) and choose <strong className="font-semibold text-label">Downloads</strong>.</li>
+          ) : (
+            <li>Open your phone&apos;s <strong className="font-semibold text-label">Downloads</strong> (or tap the download notification).</li>
+          )}
           <li>Tap <strong className="font-semibold text-label">{help.filename}</strong>.</li>
           <li>Tap <strong className="font-semibold text-label">Install</strong>. If asked, allow installs from this browser.</li>
         </ol>
+        {/* No "Open Downloads" button: a web page cannot open the browser's downloads list, and Chrome only
+            follows intent: links to activities marked BROWSABLE, which Android's Downloads screen is not. */}
         <div className="mt-5 flex gap-3">
-          <button type="button" onClick={closeInstallHelp} className="btn-secondary flex-1">Close</button>
-          {android && (
-            <button type="button" onClick={openDownloadsApp} className="btn-primary flex-1">Open Downloads</button>
-          )}
+          <button type="button" onClick={closeInstallHelp} className="btn-primary flex-1">OK</button>
         </div>
       </div>
     </div>

@@ -96,6 +96,7 @@ export default async function AppPage({ params, searchParams }: { params: Promis
           <div className="mt-auto flex items-center gap-3 pt-3">
             <GetButton app={app} href={href} size="lg" disabled={unavailable} />
             <ShareButton url={appUrl} title={app.name} text={shareText} variant="icon" label={`Share ${app.name}`} qrSvg={appQr} className="-mx-1" />
+            {!web && !unavailable && <NotifyButton topic={`app:${app.slug}`} className="-ml-2" />}
             {(unavailable || web) && (
               <p className="min-w-0 text-caption text-label-3">{unavailable ? "No release yet" : hostname(app.webUrl)}</p>
             )}
@@ -107,8 +108,6 @@ export default async function AppPage({ params, searchParams }: { params: Promis
           )}
         </div>
       </header>
-
-      {!web && !unavailable && <NotifyButton topic={`app:${app.slug}`} className="animate-rise -mt-2 mb-5" />}
 
       <div className="animate-rise no-scrollbar -mx-5 flex overflow-x-auto border-y-[0.5px] border-separator px-5 py-3.5" style={{ animationDelay: "80ms" }} role="list" aria-label="App facts">
         <Stat label={web ? "Opens" : "Downloads"} value={formatCount(app.downloads)} />
