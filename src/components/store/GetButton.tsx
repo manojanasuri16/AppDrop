@@ -78,10 +78,6 @@ export function GetButton({ app, href, size = "sm", disabled, className = "" }: 
   );
 }
 
-function mb(n: number) {
-  return `${(n / 1e6).toFixed(n < 1e60 ? 1 : 0)} MB`;
-}
-
 /** Circular progress with a stop square, like the App Store. */
 function Ring({ pct }: { pct: number | null }) {
   const r = 9;
