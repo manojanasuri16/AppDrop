@@ -95,9 +95,9 @@ export default async function AppPage({ params, searchParams }: { params: Promis
           {app.tagline && <p className="truncate text-footnote text-label-3">{app.developer}</p>}
           <div className="mt-auto flex items-center gap-3 pt-3">
             <GetButton app={app} href={href} size="lg" disabled={unavailable} />
-            <ShareButton url={appUrl} title={app.name} text={shareText} variant="icon" label={`Share ${app.name}`} qrSvg={appQr} className="-mx-1" />
+            <ShareButton url={appUrl} title={app.name} text={shareText} variant="icon" label={`Share ${app.name}`} qrSvg={appQr} className="order-1 -mx-1" />
             <DownloadLine href={href} enabled={!web}>
-            <p className="min-w-0 text-caption text-label-3">
+            <p className="order-2 min-w-0 text-caption text-label-3">
               {unavailable ? "No release yet" : web ? hostname(app.webUrl) : <>{latest?.prerelease ? "Beta" : "Version"} {latest?.tag}<br />{formatBytes(primary?.size)}</>}
             </p>
             </DownloadLine>
