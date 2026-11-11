@@ -83,6 +83,12 @@ export async function handleDownload(req: NextRequest, slug: string, assetIdPara
     }
     if (count) await recordDownload(app.id, asset.releaseId, asset.id);
 
+    // ?stream=1: the in-app downloader needs a same-origin body with Content-Length to show real progress.
+    if (target.type === "redirect" && req.nextUrl.searchParams.get("stream") === "1") {
+      const upstream = await fetch(target.url, { cache: "no-store", signal: AbortSignal.timeout(280_000) });
+      if (!upstream.ok || !upstream.body) throw new GitHubError(`Upstream ${upstream.status}`, 502);
+      target = { type: "stream", res: upstream };
+    }
     if (target.type === "redirect") return NextResponse.redirect(target.url, { status: 302, headers: noStore });
 
     const filename = asset.name.replace(/[^A-Za-z0-9._-]/g, "_");
