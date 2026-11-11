@@ -1,11 +1,26 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
-import { closeInstallHelp, getInstallHelp, subscribeDownloads } from "@/lib/client-downloads";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { closeInstallHelp, getInstallHelp, openDownloadsApp, subscribeDownloads } from "@/lib/client-downloads";
 
 /** Tells the user where the saved APK is and how to install it from the phone. */
 export function InstallDialog() {
   const help = useSyncExternalStore(subscribeDownloads, getInstallHelp, () => null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [help]);
+  // If the page is still in front shortly after tapping, Android/Chrome didn't open Downloads.
+  const tryOpen = () => {
+    let left = false;
+    const onHide = () => { left = true; };
+    document.addEventListener("visibilitychange", onHide, { once: true });
+    window.addEventListener("pagehide", onHide, { once: true });
+    openDownloadsApp();
+    setTimeout(() => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onHide);
+      if (!left && !document.hidden) setFailed(true);
+    }, 1500);
+  };
   useEffect(() => {
     if (!help) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeInstallHelp();
@@ -36,10 +51,16 @@ export function InstallDialog() {
           <li>Tap <strong className="font-semibold text-label">{help.filename}</strong>.</li>
           <li>Tap <strong className="font-semibold text-label">Install</strong>. If asked, allow installs from this browser.</li>
         </ol>
-        {/* No "Open Downloads" button: a web page cannot open the browser's downloads list, and Chrome only
-            follows intent: links to activities marked BROWSABLE, which Android's Downloads screen is not. */}
+        {failed && (
+          <p role="status" className="mt-3 rounded-xl bg-warning/15 px-3 py-2 text-footnote text-label">
+            Couldn&apos;t open Downloads from here. Use the notification or the browser menu (⋮) → Downloads.
+          </p>
+        )}
         <div className="mt-5 flex gap-3">
-          <button type="button" onClick={closeInstallHelp} className="btn-primary flex-1">OK</button>
+          <button type="button" onClick={closeInstallHelp} className="btn-secondary flex-1">Close</button>
+          {android && (
+            <button type="button" onClick={tryOpen} className="btn-primary flex-1">Open Downloads</button>
+          )}
         </div>
       </div>
     </div>
