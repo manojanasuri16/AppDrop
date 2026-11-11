@@ -104,3 +104,8 @@ export function closeInstallHelp() {
   help = null;
   listeners.forEach((l) => l());
 }
+
+/** Best effort: asks Chrome to open Android's Downloads screen. Chrome may ignore it. */
+export function openDownloadsApp() {
+  window.location.href = "intent:#Intent;action=android.intent.action.VIEW_DOWNLOADS;end";
+}
