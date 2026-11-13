@@ -1,8 +1,46 @@
+<div align="center">
+
+<img src="docs/icon.png" alt="AppDrop icon" width="104" height="104">
+
 # AppDrop
 
-A self-hosted, personal app store. Publish the Android apps and web apps you build for friends and family in one place, and let people install them straight from the source. Apps are backed by GitHub Releases, so shipping a new version is just cutting a release.
+**Your own app store. Ship Android and web apps to friends and family, straight from GitHub Releases.**
 
-**Live example:** <https://appdrop-store.vercel.app> (the author's own store). Built with Next.js 16, SQLite/libSQL (Drizzle) and Tailwind. Fork it and run your own, see [Deployment](#deployment).
+[![Live store](https://img.shields.io/badge/live-appdrop--store.vercel.app-0a84ff?style=for-the-badge)](https://appdrop-store.vercel.app)
+
+![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
+![SQLite / libSQL](https://img.shields.io/badge/SQLite-libSQL-003b57?logo=sqlite&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-installable-5e5ce6)
+![Self-hosted](https://img.shields.io/badge/self--hosted-yes-34c759)
+
+<br>
+
+<table>
+  <tr>
+    <td align="center"><picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/home-dark.png">
+      <img src="docs/screenshots/home-light.png" alt="Store home" width="230">
+    </picture></td>
+    <td align="center"><picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/app-dark.png">
+      <img src="docs/screenshots/app-light.png" alt="App page" width="230">
+    </picture></td>
+    <td align="center"><picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/detail-dark.png">
+      <img src="docs/screenshots/detail-light.png" alt="Another app page" width="230">
+    </picture></td>
+  </tr>
+</table>
+
+<sub>The store adapts to light and dark mode. Try it live at <a href="https://appdrop-store.vercel.app">appdrop-store.vercel.app</a>.</sub>
+
+</div>
+
+---
+
+Publish the Android apps and web apps you build in one place, and let people install them straight from the source. Apps are backed by GitHub Releases, so shipping a new version is just cutting a release. Fork it and run your own, see [Deployment](#deployment).
 
 ## Features
 
