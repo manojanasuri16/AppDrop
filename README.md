@@ -1,6 +1,8 @@
 # AppDrop
 
-A personal app marketplace. Publish the Android apps and web apps you make for friends and family in one place, and let people install them straight from the source. Apps are backed by GitHub Releases, so shipping a new version is just cutting a release.
+A self-hosted, personal app store. Publish the Android apps and web apps you build for friends and family in one place, and let people install them straight from the source. Apps are backed by GitHub Releases, so shipping a new version is just cutting a release.
+
+**Live example:** <https://appdrop-store.vercel.app> (the author's own store). Built with Next.js 16, SQLite/libSQL (Drizzle) and Tailwind. Fork it and run your own, see [Deployment](#deployment).
 
 ## Features
 
@@ -9,13 +11,13 @@ A personal app marketplace. Publish the Android apps and web apps you make for f
 - **Installable store**: the store itself is a PWA with an offline page and an install prompt.
 - **Auto-sync from GitHub**: release lists refresh in the background (stale-while-revalidate), with an optional webhook for instant updates.
 - **Simple admin**: a password-protected panel to add apps, edit the listing and screenshots, and set visibility.
-- **Private by design**: drafts are hidden, nothing is indexed, and the GitHub token never leaves the server.
+- **Quiet by default**: drafts are hidden, nothing is indexed by search engines, and the GitHub token never leaves the server.
 - **In-app update checks (Android)**: installed apps can tell when a newer release is out (see [In-app updates](#in-app-updates)).
 - **Push notifications**: "Notify me" per app, plus store-wide alerts, when a new release is published.
 - **Feedback**: a store feedback form and an in-app feedback form, stored per app.
 - **Beta channel**: invite links for testers, who then get pre-release builds.
 - **Insights**: views by source, downloads by version, active devices and the share of devices on the latest version.
-- **Daily backups**: a scheduled export of the whole database, downloadable from GitHub Actions.
+- **Backups**: a protected export endpoint plus a script to download the whole database.
 
 ## Architecture
 
@@ -100,19 +102,16 @@ Android apps can check the store for a newer release and prompt the user to upda
 
 ## Backups
 
-A GitHub Actions workflow (`.github/workflows/backup.yml`) exports the database every day at 03:30 UTC through the protected `/api/backup` endpoint. Each run uploads one `backup-<timestamp>.ndjson.gz` file as an artifact, kept for 30 days.
+A protected endpoint, `/api/backup`, exports the whole database as one `backup-<timestamp>.ndjson.gz` file. Backups contain everything, including push subscriptions and feedback, so keep them private and out of git (`backups/` is already in `.gitignore`).
+
+There is deliberately no GitHub Actions workflow for this: on a public repository, workflow artifacts can be downloaded by any signed-in GitHub user. Run the script from your own machine (or a cron job on a private host) instead.
 
 **Setup**
 
 1. Generate a token: `openssl rand -hex 32`.
-2. Add it to Vercel as `BACKUP_TOKEN`, and redeploy. Without it the endpoint returns 404.
-3. Add two repository secrets in GitHub (**Settings → Secrets and variables → Actions**): `APPDROP_URL` (your store URL, for example `https://apps.example.com`) and `APPDROP_BACKUP_TOKEN` (the same token).
+2. Add it to your host as `BACKUP_TOKEN`, and redeploy. Without it the endpoint returns 404.
 
-The repository is private, so the artifacts are visible only to people with access to it. Backups contain everything in the database, including push subscriptions and feedback, so don't commit them or share them. Keep them out of git (add `backups/` to `.gitignore`).
-
-**Download**: open the workflow run under **Actions → Database backup**, then download the `appdrop-backup-<run_id>` artifact. To back up on demand, use **Run workflow**.
-
-**Run locally**: `APPDROP_URL=https://apps.example.com BACKUP_TOKEN=... node scripts/backup.mjs --out backups`
+**Run a backup**: `APPDROP_URL=https://apps.example.com BACKUP_TOKEN=... node scripts/backup.mjs --out backups`
 
 **Restore into a new database**
 
@@ -146,7 +145,7 @@ The restore script has no default database, so it can't touch your live database
 | `VAPID_PUBLIC_KEY` | For push | From `npx web-push generate-vapid-keys` |
 | `VAPID_PRIVATE_KEY` | For push | Keep secret |
 | `VAPID_SUBJECT` | For push | `mailto:` or `https:` contact. Default `mailto:admin@example.com` |
-| `BACKUP_TOKEN` | For backups | `openssl rand -hex 32`. Also set as the `APPDROP_BACKUP_TOKEN` repo secret |
+| `BACKUP_TOKEN` | For backups | `openssl rand -hex 32`. Used by `scripts/backup.mjs` |
 
 Copy `.env.example` for a full list with comments.
 
@@ -183,6 +182,8 @@ DATABASE_AUTH_TOKEN=...
 Set the same `ADMIN_PASSWORD`, `ADMIN_TOTP_SECRET`, `SESSION_SECRET` and `GITHUB_TOKEN` in the Vercel project settings.
 
 ## Security model
+
+This repository is public and contains no secrets: all configuration comes from environment variables (see `.env.example`). Authentication does not rely on the code being secret.
 
 - **Two-factor admin login**: every sign-in needs the password **and** a 6-digit TOTP code (RFC 6238). Each code works only once (replay-protected), failures share one generic error, and attempts are rate-limited.
 

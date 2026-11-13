@@ -2,6 +2,9 @@
   "name": "appdrop",
   "version": "1.0.0",
   "private": true,
+  "description": "A self-hosted personal app store for Android and web apps, backed by GitHub Releases.",
+  "homepage": "https://appdrop-store.vercel.app",
+  "repository": "github:manojanasuri16/AppDrop",
   "type": "module",
   "scripts": {
     "dev": "next dev",
